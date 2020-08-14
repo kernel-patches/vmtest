@@ -2,7 +2,7 @@
 
 set -uo pipefail
 trap 'exit 2' ERR
-
+set -x
 usage () {
 	USAGE_STRING="usage: $0 [-k KERNELRELEASE|-b DIR] [[-r ROOTFSVERSION] [-fo]|-I] [-Si] [-d DIR] IMG
        $0 [-k KERNELRELEASE] -l
@@ -367,7 +367,6 @@ else
 fi
 
 LIBBPF_PATH="${REPO_ROOT}" \
-	REPO_PATH="travis-ci/vmtest/bpf-next" \
 	VMTEST_ROOT="${VMTEST_ROOT}" \
 	VMLINUX_BTF=${vmlinux} ${VMTEST_ROOT}/build_selftests.sh
 
@@ -385,6 +384,8 @@ else
 		tr '\n' '\0' < "${PROJECT_NAME}.egg-info/SOURCES.txt"
 	fi
 	} | sudo rsync --files-from=- -0cpt . "$mnt/${PROJECT_NAME}"
+	cp -a "${REPO_ROOT}"/selftests "$mnt/${PROJECT_NAME}"
+	cp -a "${REPO_ROOT}"/travis-ci "$mnt/${PROJECT_NAME}"
 fi
 
 setup_script="#!/bin/sh

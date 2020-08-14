@@ -4,11 +4,10 @@ set -euxo pipefail
 
 LLVM_VER=12
 LIBBPF_PATH="${REPO_ROOT}"
-REPO_PATH="travis-ci/vmtest/bpf-next"
 
 PREPARE_SELFTESTS_SCRIPT=${VMTEST_ROOT}/prepare_selftests-${KERNEL}.sh
 if [ -f "${PREPARE_SELFTESTS_SCRIPT}" ]; then
-	(cd "${REPO_ROOT}/${REPO_PATH}/tools/testing/selftests/bpf" && ${PREPARE_SELFTESTS_SCRIPT})
+	(cd "${REPO_ROOT}/tools/testing/selftests/bpf" && ${PREPARE_SELFTESTS_SCRIPT})
 fi
 
 if [[ "${KERNEL}" = 'LATEST' ]]; then
@@ -23,10 +22,10 @@ make \
 	LLVM_STRIP=llvm-strip-${LLVM_VER} \
 	VMLINUX_BTF="${VMLINUX_BTF}" \
 	VMLINUX_H=${VMLINUX_H} \
-	-C "${REPO_ROOT}/${REPO_PATH}/tools/testing/selftests/bpf" \
+	-C "${REPO_ROOT}/tools/testing/selftests/bpf" \
 	-j $((2*$(nproc)))
 mkdir ${LIBBPF_PATH}/selftests
-cp -R "${REPO_ROOT}/${REPO_PATH}/tools/testing/selftests/bpf" \
+cp -R "${REPO_ROOT}/tools/testing/selftests/bpf" \
 	${LIBBPF_PATH}/selftests
 cd ${LIBBPF_PATH}
 rm selftests/bpf/.gitignore

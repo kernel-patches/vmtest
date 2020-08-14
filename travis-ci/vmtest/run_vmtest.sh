@@ -16,7 +16,7 @@ sudo apt-get update
 sudo apt-get -y install clang-12 lld-12 llvm-12
 
 # Build selftests (and latest kernel, if necessary)
-KERNEL="${KERNEL}" ${VMTEST_ROOT}/prepare_selftests.sh travis-ci/vmtest/bpf-next
+KERNEL="${KERNEL}" ${VMTEST_ROOT}/prepare_selftests.sh
 
 # Escape whitespace characters.
 setup_cmd=$(sed 's/\([[:space:]]\)/\\\1/g' <<< "${VMTEST_SETUPCMD}")
@@ -24,7 +24,7 @@ setup_cmd=$(sed 's/\([[:space:]]\)/\\\1/g' <<< "${VMTEST_SETUPCMD}")
 sudo adduser "${USER}" kvm
 
 if [[ "${KERNEL}" = 'LATEST' ]]; then
-  sudo -E sudo -E -u "${USER}" "${VMTEST_ROOT}/run.sh" -b travis-ci/vmtest/bpf-next -o -d ~ -s "${setup_cmd}" ~/root.img;
+  sudo -E sudo -E -u "${USER}" "${VMTEST_ROOT}/run.sh" -b "${REPO_ROOT}"  -o -d ~ -s "${setup_cmd}" ~/root.img;
 else
   sudo -E sudo -E -u "${USER}" "${VMTEST_ROOT}/run.sh" -k "${KERNEL}*" -o -d ~ -s "${setup_cmd}" ~/root.img;
 fi
