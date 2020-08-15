@@ -384,8 +384,8 @@ else
 		tr '\n' '\0' < "${PROJECT_NAME}.egg-info/SOURCES.txt"
 	fi
 	} | sudo rsync --files-from=- -0cpt . "$mnt/${PROJECT_NAME}"
-	cp -a "${REPO_ROOT}"/selftests "$mnt/${PROJECT_NAME}"
-	cp -a "${REPO_ROOT}"/travis-ci "$mnt/${PROJECT_NAME}"
+	sudo cp -a "${REPO_ROOT}"/selftests "$mnt/${PROJECT_NAME}"
+	sudo cp -a "${REPO_ROOT}"/travis-ci "$mnt/${PROJECT_NAME}"
 fi
 
 setup_script="#!/bin/sh
