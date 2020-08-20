@@ -1,10 +1,10 @@
 #!/bin/bash
 
 travis_fold(){
-  echo -ne 'travis_fold:start:$1\\r'
+  echo -ne "travis_fold:start:$1\\r"
 }
 travis_unfold(){
-  echo -ne 'travis_fold:end:$1\\r'
+  echo -ne "travis_fold:end:$1\\r"
 }
 set -eux
 
