@@ -17,10 +17,21 @@ travis_unfold "Build_latest_pahole"
 
 # Install required packagesi
 travis_fold "Install_latest_clang"
-wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main" | sudo tee -a /etc/apt/sources.list
-sudo apt-get update
-sudo apt-get -y install clang-12 lld-12 llvm-12
+n=0
+while [ $n -lt 5 ]; do
+  set +e && \
+  wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
+  echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main" | sudo tee -a /etc/apt/sources.list && \
+  sudo apt-get update && \
+  sudo apt-get -y install clang-12 lld-12 llvm-12 && \
+  set -e && \
+  break
+  n=$(($n + 1))
+done
+if [ $n -ge 5 ] ; then
+  echo "clang install failed"
+  exit 1
+fi
 travis_unfold "Install_latest_clang"
 
 
