@@ -6,11 +6,9 @@ travis_fold(){
 travis_unfold(){
   echo -ne "travis_fold:end:$1\\r"
 }
-travis_fold "Vmtest_KERNEL_$KERNEL"
+
 set -eux
-
 VMTEST_SETUPCMD="PROJECT_NAME=${PROJECT_NAME} ./${PROJECT_NAME}/travis-ci/vmtest/run_selftests.sh"
-
 echo "KERNEL: $KERNEL"
 
 travis_fold "Build_latest_pahole"
@@ -44,6 +42,3 @@ else
   sudo -E sudo -E -u "${USER}" "${VMTEST_ROOT}/run.sh" -k "${KERNEL}*" -o -d ~ -s "${setup_cmd}" ~/root.img;
 fi
 travis_unfold "Run_selftests_in_VM"
-
-travis_unfold "Vmtest_KERNEL_$KERNEL"
-
