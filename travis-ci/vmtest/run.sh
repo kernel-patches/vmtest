@@ -417,6 +417,7 @@ echo 'Running setup commands'
 %s
 %s
 echo $? > /exitstatus
+dmesg > /dmesg
 chmod 644 /exitstatus" "${setup_envvars}" "${setup_cmd}")
 fi
 
@@ -446,6 +447,15 @@ else
 	printf '\nCould not read tests exit status\n' >&2
 	exitstatus=1
 fi
+if [ -f "$mnt/dmesg" ]; then
+        ! grep "RIP" "$mnt/dmesg" -C 20
+        exitstatus=$(($exitstatus + $?))
+else
+        # we don't have dmesg?
+        echo -e "\nFailed to obtain dmesg from VM, looks very suspicious\n" >&2
+        exitstatus=$(($exitstatus + 1))
+fi
+
 sudo umount "$mnt"
 
 travis_fold end shutdown
