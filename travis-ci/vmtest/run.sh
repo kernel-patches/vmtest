@@ -412,7 +412,7 @@ if [[ ! -z SETUPCMD ]]; then
 	setup_envvars="export KERNEL=${kernel}"
 	setup_script=$(printf "#!/bin/sh
 set -e
-dmesg -C
+dmesg -c
 
 echo 'Running setup commands'
 %s
