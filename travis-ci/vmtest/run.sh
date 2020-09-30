@@ -385,17 +385,9 @@ else
 	echo "Copying source files..." >&2
 
 	# Copy the source files in.
-	sudo mkdir -p -m 0755 "$mnt/${PROJECT_NAME}"
-  {
-    if [[ -e .git ]]; then
-      git ls-files -z
-    else
-      tr '\n' '\0' < "${PROJECT_NAME}.egg-info/SOURCES.txt"
-    fi
-  } | sudo rsync -v --exclude='*.c' --exclude='*.h' --exclude='*.dts' --exclude='*.S' --files-from=- -0cpt . "$mnt/${PROJECT_NAME}"
-
-	sudo rsync -am -v --exclude='*.c' --exclude='*.h' --exclude='*.dts' --exclude='*.S' "${REPO_ROOT}"/selftests "$mnt/${PROJECT_NAME}"
-  sudo rsync -am -v --exclude='*.c' --exclude='*.h' --exclude='*.dts' --exclude='*.S' "${REPO_ROOT}"/travis-ci "$mnt/${PROJECT_NAME}"
+  sudo mkdir -p -m 0755 ${mnt}/${PROJECT_NAME}/{selftests,travis-ci}
+  sudo rsync -am "${REPO_ROOT}/selftests/bpf" "$mnt/${PROJECT_NAME}/selftests/"
+  sudo rsync -am "${REPO_ROOT}/travis-ci/vmtest" "$mnt/${PROJECT_NAME}/travis-ci/"
 fi
 
 setup_script="#!/bin/sh
