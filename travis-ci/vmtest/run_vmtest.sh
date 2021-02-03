@@ -17,7 +17,7 @@ while [ $n -lt 5 ]; do
   wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
   echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main" | sudo tee -a /etc/apt/sources.list && \
   sudo apt-get update && \
-  sudo apt-get -y install clang-12 lld-12 llvm-12 && \
+  sudo apt-get -y install clang-13 lld-13 llvm-13 && \
   set -e && \
   break
   n=$(($n + 1))
