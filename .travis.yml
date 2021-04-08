@@ -3,6 +3,8 @@ language: bash
 dist: focal
 services:
     - docker
+git:
+    depth: 3
 
 env:
     global:
