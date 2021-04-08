@@ -6,7 +6,7 @@ CONT_NAME="${CONT_NAME:-libbpf-debian-$DEBIAN_RELEASE}"
 ENV_VARS="${ENV_VARS:-}"
 DOCKER_RUN="${DOCKER_RUN:-docker run}"
 REPO_ROOT="${REPO_ROOT:-$PWD}"
-ADDITIONAL_DEPS=(clang pkg-config gcc-8)
+ADDITIONAL_DEPS=(clang pkg-config gcc-10)
 CFLAGS="-g -O2 -Werror -Wall"
 
 function info() {
@@ -21,7 +21,7 @@ function docker_exec() {
     docker exec $ENV_VARS -it $CONT_NAME "$@"
 }
 
-set -e
+set -eu
 
 source "$(dirname $0)/travis_wait.bash"
 
@@ -31,6 +31,18 @@ for phase in "${PHASES[@]}"; do
             info "Setup phase"
             info "Using Debian $DEBIAN_RELEASE"
 
+	    # Install Docker Engine
+            sudo apt-get update
+            sudo apt-get install \
+                apt-transport-https \
+                ca-certificates \
+                curl \
+                gnupg-agent \
+                software-properties-common
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository \
+                "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+            sudo apt-get update
             sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
             docker --version
 
@@ -45,13 +57,13 @@ for phase in "${PHASES[@]}"; do
             docker_exec apt-get -y install libelf-dev
             docker_exec apt-get -y install "${ADDITIONAL_DEPS[@]}"
             ;;
-        RUN|RUN_CLANG|RUN_GCC8|RUN_ASAN|RUN_CLANG_ASAN|RUN_GCC8_ASAN)
+        RUN|RUN_CLANG|RUN_GCC10|RUN_ASAN|RUN_CLANG_ASAN|RUN_GCC10_ASAN)
             if [[ "$phase" = *"CLANG"* ]]; then
                 ENV_VARS="-e CC=clang -e CXX=clang++"
                 CC="clang"
-            elif [[ "$phase" = *"GCC8"* ]]; then
-                ENV_VARS="-e CC=gcc-8 -e CXX=g++-8"
-                CC="gcc-8"
+            elif [[ "$phase" = *"GCC10"* ]]; then
+                ENV_VARS="-e CC=gcc-10 -e CXX=g++-10"
+                CC="gcc-10"
             else
                 CFLAGS="${CFLAGS} -Wno-stringop-truncation"
             fi
