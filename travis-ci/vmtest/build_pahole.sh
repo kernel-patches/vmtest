@@ -15,8 +15,10 @@ cd ${REPO_PATH}
 git init
 git remote add origin ${PAHOLE_ORIGIN}
 git fetch origin
-# git checkout master
-git checkout 743f2536d8b876a4d9addc6d6d9eb1aa086a47c8
+git checkout master
+
+# temporary fix up for pahole until official 1.22 release
+sed -i 's/DDWARVES_MINOR_VERSION=21/DDWARVES_MINOR_VERSION=22/' CMakeLists.txt
 
 mkdir -p build
 cd build
