@@ -3,7 +3,7 @@
 set -eu
 
 source $(cd $(dirname $0) && pwd)/helpers.sh
-VMTEST_SETUPCMD="GITHUB_WORKFLOW=${GITHUB_WORKFLOW} PROJECT_NAME=${PROJECT_NAME} ./${PROJECT_NAME}/travis-ci/vmtest/run_selftests.sh"
+VMTEST_SETUPCMD="GITHUB_WORKFLOW=${GITHUB_WORKFLOW:-} PROJECT_NAME=${PROJECT_NAME} ./${PROJECT_NAME}/travis-ci/vmtest/run_selftests.sh"
 echo "KERNEL: $KERNEL"
 echo
 
