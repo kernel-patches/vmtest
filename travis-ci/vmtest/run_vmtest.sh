@@ -19,7 +19,7 @@ while [ $n -lt 5 ]; do
   wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
   echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal main" | sudo tee -a /etc/apt/sources.list && \
   sudo apt-get update && \
-  sudo aptitude -y install clang-13 lld-13 llvm-13 && \
+  sudo aptitude -y install clang-14 lld-14 llvm-14 && \
   set -e && \
   break
   n=$(($n + 1))
