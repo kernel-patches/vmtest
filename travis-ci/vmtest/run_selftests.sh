@@ -28,6 +28,12 @@ test_verifier() {
 	travis_fold end test_verifier
 }
 
+bpftool_checks() {
+	travis_fold start bpftool_checks "bpftool checks"
+	./test_bpftool_synctypes.py
+	travis_fold end bpftool_checks
+}
+
 travis_fold end vm_init
 
 configs_path='libbpf/travis-ci/vmtest/configs'
