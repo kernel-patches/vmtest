@@ -54,4 +54,5 @@ test_progs
 if [[ "${KERNEL}" == 'latest' ]]; then
 	test_maps
 	test_verifier
+	bpftool_checks
 fi
