@@ -442,10 +442,10 @@ sudo umount "$mnt"
 
 echo "Starting VM with $(nproc) CPUs..."
 
-qemu-system-x86_64 -nodefaults -display none -serial mon:stdio \
+qemu-system-x86_64 -nodefaults -display none -serial mon:stdio -no-reboot \
 	-cpu qemu64 -machine accel=tcg -smp "$(nproc)" -m 4G \
 	-drive file="$IMG",format=raw,index=1,media=disk,if=virtio,cache=none \
-	-kernel "$vmlinuz" -append "root=/dev/vda rw console=ttyS0,115200$APPEND"
+	-kernel "$vmlinuz" -append "root=/dev/vda rw console=ttyS0,115200 kernel.panic=-1 $APPEND"
 
 sudo mount -o loop "$IMG" "$mnt"
 if exitstatus="$(cat "$mnt/exitstatus" 2>/dev/null)"; then
