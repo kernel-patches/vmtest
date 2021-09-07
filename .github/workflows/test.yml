@@ -9,6 +9,7 @@ concurrency:
 
 jobs:
   VM_Test:
+    timeout-minutes: 100
     runs-on: ubuntu-latest
     env:
       PROJECT_NAME: 'libbpf'
