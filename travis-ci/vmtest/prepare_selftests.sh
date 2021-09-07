@@ -5,8 +5,8 @@ set -eu
 source $(cd $(dirname $0) && pwd)/helpers.sh
 
 travis_fold start apply_local_patch "Apply local patches"
-if ls ${VMTEST_ROOT}/patches/*.diff 1>/dev/null 2>&1; then
-  for file in ${VMTEST_ROOT}/patches/*.diff; do
+if ls ${VMTEST_ROOT}/diffs/*.diff 1>/dev/null 2>&1; then
+  for file in ${VMTEST_ROOT}/diffs/*.diff; do
     patch -p1 < ${file}
   done
 fi
