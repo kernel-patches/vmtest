@@ -2,6 +2,7 @@ name: bpf-ci
 
 on:
   pull_request:
+  push:
 
 concurrency: 
   group: ci-test-${{ github.head_ref }}
@@ -9,7 +10,7 @@ concurrency:
 
 jobs:
   VM_Test:
-    timeout-minutes: 100
+    timeout-minutes: 102
     runs-on: ubuntu-latest
     env:
       PROJECT_NAME: 'libbpf'
@@ -18,17 +19,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: install
-        run: sudo apt-get update && sudo apt-get install aptitude qemu-kvm zstd binutils-dev elfutils libcap-dev libelf-dev libdw-dev python3-docutils
-      - name: Get bpf-next source
-        if: ${{ github.repository != 'kernel-patches/bpf' }}
-        uses: actions/checkout@v2
+      - if: ${{ github.repository != 'kernel-patches/bpf' }}
+        name: Download bpf-next tree
+        uses: libbpf/ci/get-linux-source@thefallentree
         with:
-          repository: kernel-patches/bpf
-          ref: 'bpf-next'
-          path: 'linux'
-      - name: Move linux source in place
-        if: ${{ github.repository != 'kernel-patches/bpf' }}
-        run: rsync --exclude .git -av linux/. . && rm -rf linux
-      - name: Kernel LATEST + selftests
-        run: export REPO_ROOT=$GITHUB_WORKSPACE; export CI_ROOT=$REPO_ROOT/travis-ci; export VMTEST_ROOT=$CI_ROOT/vmtest; ${CI_ROOT}/vmtest/run_vmtest.sh || exit 1
+          dest: '${{ github.workspace }}'
+      - name: patch bpf-next tree
+        run: |
+          ${{ github.workspace }}/.github/workflows/patch_kernel.sh
+      - name: Install LATEST pahole
+        uses: libbpf/ci/install-pahole@thefallentree
+      - name: Install LATEST clang
+        uses: libbpf/ci/install-clang@thefallentree
+      - name: Build kernel with config
+        run: |
+          cp .github/workflows/latest.config .config
+          make -j olddefconfig all
+      - name: Run selftests
+        uses: libbpf/ci/vmtest@thefallentree
+        with:
+          repo-root: '${{ github.workspace }}'
