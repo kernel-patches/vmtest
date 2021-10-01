@@ -7,7 +7,7 @@ source $(cd $(dirname $0) && pwd)/helpers.sh
 travis_fold start apply_local_patch "Apply local patches"
 if ls ${VMTEST_ROOT}/diffs/*.diff 1>/dev/null 2>&1; then
   for file in ${VMTEST_ROOT}/diffs/*.diff; do
-    patch -p1 < ${file} || true
+    (patch -f --dry-run -p1 < ${file} && patch -f -p1 < ${file} ) || true
   done
 fi
 travis_fold end apply_local_patch
