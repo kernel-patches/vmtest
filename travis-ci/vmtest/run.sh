@@ -431,8 +431,7 @@ sudo chmod 755 "$mnt/etc/rcS.d/S50-run-tests"
 
 poweroff_script="#!/bin/sh
 
-echo travis_fold:start:shutdown
-echo -e '\033[1;33mShutdown\033[0m\n'
+echo -e '$(travis_fold start shutdown Shutdown)'
 
 poweroff"
 echo "${poweroff_script}" | sudo tee "$mnt/etc/rcS.d/S99-poweroff" > /dev/null
