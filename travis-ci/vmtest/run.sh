@@ -372,13 +372,13 @@ else
 	sudo chmod 644 "$vmlinux"
 fi
 
+sudo truncate -s 0 "$mnt/exitstatus"
+
 travis_fold end vmlinux_setup
 
 LIBBPF_PATH="${REPO_ROOT}" \
 	VMTEST_ROOT="${VMTEST_ROOT}" \
 	VMLINUX_BTF=${vmlinux} ${VMTEST_ROOT}/build_selftests.sh
-
-declare -A test_results
 
 travis_fold start bpftool_checks "Running bpftool checks..."
 if [[ "${KERNEL}" = 'LATEST' ]]; then
@@ -386,14 +386,15 @@ if [[ "${KERNEL}" = 'LATEST' ]]; then
 	# Python script fails), but it prevents the trap on ERR set at the top
 	# of this file to trigger on failure.
 	"${REPO_ROOT}/tools/testing/selftests/bpf/test_bpftool_synctypes.py" && true
-	test_results["bpftool"]=$?
-	if [[ ${test_results["bpftool"]} -eq 0 ]]; then
+	exitstatus=$?
+	sudo bash -c "echo 'bpftool:${exitstatus}' > '$mnt/exitstatus'"
+	if [[ "$exitstatus" -eq 0 ]]; then
 		print_notice bpftool_checks "bpftool checks passed successfully."
 	else
-		print_error bpftool_checks "bpftool checks returned ${test_results["bpftool"]}."
+		print_error bpftool_checks "bpftool checks returned ${exitstatus}."
 	fi
 else
-	echo "Consistency checks skipped."
+	echo "bpftool checks skipped."
 fi
 travis_fold end bpftool_checks
 
@@ -413,8 +414,7 @@ fi
 setup_script="#!/bin/sh
 
 echo 'Skipping setup commands'
-echo 0 > /exitstatus
-chmod 644 /exitstatus"
+echo vm_start:0 >> /exitstatus"
 
 # Create the init scripts.
 if [[ ! -z SETUPCMD ]]; then
@@ -430,10 +430,11 @@ dmesg -c
 echo 'Running setup commands'
 %s
 set +e; %s; exitstatus=\$?; set -e
-echo \$exitstatus > /exitstatus
-dmesg > /dmesg
-
-chmod 644 /exitstatus" "${setup_envvars}" "${setup_cmd}")
+# If setup command did not write its exit status to /exitstatus, do it now
+if ! grep -qv bpftool /exitstatus; then
+	echo setup_cmd:\$exitstatus >> /exitstatus
+fi
+dmesg > /dmesg" "${setup_envvars}" "${setup_cmd}")
 fi
 
 echo "${setup_script}" | sudo tee "$mnt/etc/rcS.d/S50-run-tests" > /dev/null
@@ -457,11 +458,15 @@ qemu-system-x86_64 -nodefaults -display none -serial mon:stdio -no-reboot \
 	-kernel "$vmlinuz" -append "root=/dev/vda rw console=ttyS0,115200 kernel.panic=-1 $APPEND"
 
 sudo mount -o loop "$IMG" "$mnt"
-if exitstatus="$(cat "$mnt/exitstatus" 2>/dev/null)"; then
+
+# Set to 1 if at least one group test returned non-0
+exitstatus=$(sudo awk --field-separator ':' \
+	'BEGIN { s=0 } { if ($2) {s=1} } END { print s }' "$mnt/exitstatus")
+
+if [[ "$exitstatus" -ne 0 ]]; then
 	printf '\nTests exit status: %s\n' "$exitstatus" >&2
 else
 	printf '\nCould not read tests exit status\n' >&2
-	exitstatus=1
 fi
 if [ -f "$mnt/dmesg" ]; then
         ! grep "RIP" "$mnt/dmesg" -C 20
@@ -473,25 +478,21 @@ else
         exitstatus=$(($exitstatus + 1))
 fi
 
-sudo umount "$mnt"
-
 travis_fold end shutdown
-
-test_results["vm_tests"]=$exitstatus
 
 # Final summary - Don't use a fold, keep it visible
 echo -e "\033[1;33mTest Results:\033[0m"
-for testgroup in ${!test_results[@]}; do
+sudo cat "$mnt/exitstatus" | while read result; do
+	testgroup=${result%:*}
+	status=${result#*:}
 	# Print final result for each group of tests
-	if [[ ${test_results[$testgroup]} -eq 0 ]]; then
+	if [[ "$status" -eq 0 ]]; then
 		printf "%20s: \033[1;32mPASS\033[0m\n" $testgroup
 	else
-		printf "%20s: \033[1;31mFAIL\033[0m\n" $testgroup
-	fi
-	# Make exitstatus > 0 if at least one test group has failed
-	if [[ ${test_results[$testgroup]} -ne 0 ]]; then
-		exitstatus=1
+		printf "%20s: \033[1;31mFAIL\033[0m (returned %s)\n" $testgroup $status
 	fi
 done
+
+sudo umount "$mnt"
 
 exit "$exitstatus"
