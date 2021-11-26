@@ -276,10 +276,9 @@ if [[ $SKIPIMG -eq 0 && ! -v ROOTFSVERSION ]]; then
 	ROOTFSVERSION="$(newest_rootfs_version)"
 fi
 
-echo "Kernel release: $KERNELRELEASE" >&2
-echo
-
 travis_fold start vmlinux_setup "Preparing Linux image"
+
+echo "Kernel release: $KERNELRELEASE" >&2
 
 if (( SKIPIMG )); then
 	echo "Not extracting root filesystem" >&2
@@ -429,20 +428,23 @@ dmesg -c
 
 echo 'Running setup commands'
 %s
-set +e; %s; exitstatus=\$?; set -e
+set +e;
+%s; exitstatus=\$?;
+echo -e '$(travis_fold start collect_status "Collect status and dmesg")'
+set -e
 # If setup command did not write its exit status to /exitstatus, do it now
 if ! grep -qv bpftool /exitstatus; then
 	echo setup_cmd:\$exitstatus >> /exitstatus
 fi
-dmesg > /dmesg" "${setup_envvars}" "${setup_cmd}")
+dmesg > /dmesg
+echo -e '$(travis_fold end collect_status)'
+echo -e '$(travis_fold start shutdown Shutdown)'" "${setup_envvars}" "${setup_cmd}")
 fi
 
 echo "${setup_script}" | sudo tee "$mnt/etc/rcS.d/S50-run-tests" > /dev/null
 sudo chmod 755 "$mnt/etc/rcS.d/S50-run-tests"
 
 poweroff_script="#!/bin/sh
-
-echo -e '$(travis_fold start shutdown Shutdown)'
 
 poweroff"
 echo "${poweroff_script}" | sudo tee "$mnt/etc/rcS.d/S99-poweroff" > /dev/null

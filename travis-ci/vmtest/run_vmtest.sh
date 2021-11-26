@@ -33,11 +33,12 @@ travis_fold end install_clang
 # Build selftests (and latest kernel, if necessary)
 KERNEL="${KERNEL}" ${VMTEST_ROOT}/prepare_selftests.sh
 
-
+travis_fold start adduser_to_kvm "Add user ${USER}"
+sudo adduser "${USER}" kvm
+travis_fold stop adduser_to_kvm
 
 # Escape whitespace characters.
 setup_cmd=$(sed 's/\([[:space:]]\)/\\\1/g' <<< "${VMTEST_SETUPCMD}")
-sudo adduser "${USER}" kvm
 
 if [[ "${KERNEL}" = 'LATEST' ]]; then
   sudo -E sudo -E -u "${USER}" "${VMTEST_ROOT}/run.sh" -b "${REPO_ROOT}"  -o -d ~ -s "${setup_cmd}" ~/root.img;
