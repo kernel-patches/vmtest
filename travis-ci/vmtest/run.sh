@@ -465,10 +465,11 @@ sudo mount -o loop "$IMG" "$mnt"
 exitstatus=$(sudo awk --field-separator ':' \
 	'BEGIN { s=0 } { if ($2) {s=1} } END { print s }' "$mnt/exitstatus")
 
-if [[ "$exitstatus" -ne 0 ]]; then
+if [[ "$exitstatus" =~ ^[0-9]+$ ]]; then
 	printf '\nTests exit status: %s\n' "$exitstatus" >&2
 else
-	printf '\nCould not read tests exit status\n' >&2
+	printf '\nCould not read tests exit status ("%s")\n' "$exitstatus" >&2
+	exitstatus=1
 fi
 if [ -f "$mnt/dmesg" ]; then
         ! grep "RIP" "$mnt/dmesg" -C 20
@@ -489,9 +490,9 @@ sudo cat "$mnt/exitstatus" | while read result; do
 	status=${result#*:}
 	# Print final result for each group of tests
 	if [[ "$status" -eq 0 ]]; then
-		printf "%20s: \033[1;32mPASS\033[0m\n" $testgroup
+		printf "%20s: \033[1;32mPASS\033[0m\n" "$testgroup"
 	else
-		printf "%20s: \033[1;31mFAIL\033[0m (returned %s)\n" $testgroup $status
+		printf "%20s: \033[1;31mFAIL\033[0m (returned %s)\n" "$testgroup" "$status"
 	fi
 done
 
