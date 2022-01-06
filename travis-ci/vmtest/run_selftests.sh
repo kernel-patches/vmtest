@@ -7,10 +7,9 @@ source $(cd $(dirname $0) && pwd)/helpers.sh
 STATUS_FILE=/exitstatus
 
 TEST_PROGS_ARGS=""
-# Disabled due to issue
-# if [[ "$(nproc)" -gt 2 ]]; then
-#   TEST_PROGS_ARGS="-j"
-# fi
+if [[ "$(nproc)" -gt 2 ]]; then
+  TEST_PROGS_ARGS="-j6"
+fi
 
 test_progs() {
   travis_fold start test_progs "Testing test_progs"
