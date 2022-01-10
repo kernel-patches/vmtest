@@ -8,7 +8,7 @@ STATUS_FILE=/exitstatus
 
 TEST_PROGS_ARGS=""
 if [[ "$(nproc)" -gt 2 ]]; then
-  TEST_PROGS_ARGS="-j6"
+  TEST_PROGS_ARGS="-j6 --debug"
 fi
 
 test_progs() {
