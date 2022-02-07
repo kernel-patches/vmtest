@@ -24,7 +24,7 @@ fi
 
 cd ${REPO_ROOT}/${REPO_PATH}
 make \
-	LLVM=1 LD=ld \
+	LLVM=1 LD=ld HOSTLD=ld \
 	CLANG=clang-${LLVM_VER} \
 	LLC=llc-${LLVM_VER} \
 	LLVM_STRIP=llvm-strip-${LLVM_VER} \
