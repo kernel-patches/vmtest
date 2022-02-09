@@ -29,7 +29,7 @@ test_progs() {
 
 test_maps() {
   travis_fold start test_maps "Testing test_maps"
-  ./test_maps && true
+  taskset 0xF ./test_maps && true
   echo "test_maps:$?" >>"${STATUS_FILE}"
   travis_fold end test_maps
 }
