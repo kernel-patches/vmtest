@@ -23,7 +23,7 @@ runs:
         arch: 'x86_64'
         kernel-root: '.'
     - name: Run selftests
-      uses: libbpf/ci/run-qemu@master
+      uses: libbpf/ci/run-qemu@thefallentree-1
       with:
         arch: 'x86_64'
         img: '/tmp/root.img'
