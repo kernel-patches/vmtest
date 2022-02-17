@@ -17,7 +17,7 @@ runs:
         VMLINUX_BTF: ${{ github.workspace }}/vmlinux
     # 3. Test
     - name: Prepare rootfs
-      uses: libbpf/ci/prepare-rootfs@master
+      uses: libbpf/ci/prepare-rootfs@thefallentree-1
       with:
         project-name: 'libbpf'
         arch: 'x86_64'
