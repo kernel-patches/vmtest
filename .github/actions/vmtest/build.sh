@@ -9,6 +9,6 @@ source "${THISDIR}"/helpers.sh
 travis_fold start build_kernel "Building kernel"
 
 cp "${GITHUB_ACTION_PATH}"/latest.config .config
-make -j LLVM=1 LD=lld-15 HOSTLD=lld-15 $((4*$(nproc))) olddefconfig all > /dev/null
+make -j LLVM=1 LD=ld.lld-15 HOSTLD=ld.lld-15 $((4*$(nproc))) olddefconfig all > /dev/null
 
 travis_fold end build_kernel
