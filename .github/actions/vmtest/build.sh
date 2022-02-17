@@ -9,6 +9,9 @@ source "${THISDIR}"/helpers.sh
 travis_fold start build_kernel "Building kernel"
 
 cp "${GITHUB_ACTION_PATH}"/latest.config .config
+
+LLVM_VER=15
+
 make LLVM=1 \
   LD=lld-${LLVM_VER} HOSTLD=lld-${LLVM_VER} \
 	CLANG=clang-${LLVM_VER} \
