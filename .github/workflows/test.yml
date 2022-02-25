@@ -2,6 +2,7 @@ name: bpf-ci
 
 on:
   pull_request:
+  workflow_call:
 
 concurrency: 
   group: ci-test-${{ github.head_ref }}
