@@ -1,5 +1,10 @@
 name: 'vmtest'
 description: 'Build + run vmtest'
+inputs:
+  arch:
+    description: 'what arch to test'
+    required: true
+    default: 'x86_64'
 runs:
   using: "composite"
   steps:
@@ -9,7 +14,7 @@ runs:
     # 2. Build
     - name: Build kernel image
       shell: bash
-      run: ${GITHUB_ACTION_PATH}/build.sh
+      run: ${GITHUB_ACTION_PATH}/build.sh ${{ inputs.arch }}
     - name: Build selftests
       shell: bash
       run: ${GITHUB_ACTION_PATH}/build_selftests.sh
@@ -20,11 +25,11 @@ runs:
       uses: libbpf/ci/prepare-rootfs@master
       with:
         project-name: 'libbpf'
-        arch: 'x86_64'
+        arch: ${{ inputs.arch }}
         kernel-root: '.'
     - name: Run selftests
       uses: libbpf/ci/run-qemu@master
       with:
-        arch: 'x86_64'
+        arch: ${{ inputs.arch}}
         img: '/tmp/root.img'
         vmlinuz: '${{ github.workspace }}/vmlinuz'

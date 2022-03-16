@@ -9,8 +9,19 @@ concurrency:
 
 jobs:
   VM_Test:
+    runs-on: ${{ matrix.runs_on }}
+    name: Kernel ${{ matrix.kernel }} on ${{ matrix.runs_on }} + selftests
     timeout-minutes: 100
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kernel: 'LATEST'
+            runs_on: ubuntu-latest
+            arch: 'x86_64'
+          - kernel: 'LATEST'
+            runs_on: z15
+            arch: 's390x'
     env:
       AUTHOR_EMAIL: "$(git log -1 --pretty=\"%aE\")"
       KERNEL: LATEST
@@ -35,4 +46,5 @@ jobs:
           patches-root: '${{ github.workspace }}/travis-ci/diffs'
           repo-root: '${{ github.workspace }}'
       - uses: ./.github/actions/vmtest
-
+        with:
+          arch: ${{ matrix.arch }}
