@@ -4,7 +4,17 @@ set -euo pipefail
 
 source $(cd $(dirname $0) && pwd)/helpers.sh
 
+ARCH=$(uname -m)
+
 STATUS_FILE=/exitstatus
+
+read_lists() {
+	(for path in "$@"; do
+		if [[ -s "$path" ]]; then
+			cat "$path"
+		fi;
+	done) | cut -d'#' -f1 | tr -s ' \t\n' ','
+}
 
 TEST_PROGS_ARGS=""
 # Disabled due to issue
@@ -43,18 +53,11 @@ test_verifier() {
 
 travis_fold end vm_init
 
-configs_path='libbpf/travis-ci/vmtest/configs'
-blacklist_path="$configs_path/blacklist/BLACKLIST-${KERNEL}"
-if [[ -s "${blacklist_path}" ]]; then
-  BLACKLIST=$(cat "${blacklist_path}" | cut -d'#' -f1 | tr -s '[:space:]' ',')
-fi
+configs_path=${PROJECT_NAME}/vmtest/configs
+BLACKLIST=$(read_lists "$configs_path/blacklist/BLACKLIST-${KERNEL}" "$configs_path/blacklist/BLACKLIST-${KERNEL}.${ARCH}")
+WHITELIST=$(read_lists "$configs_path/whitelist/WHITELIST-${KERNEL}" "$configs_path/whitelist/WHITELIST-${KERNEL}.${ARCH}")
 
-whitelist_path="$configs_path/whitelist/WHITELIST-${KERNEL}"
-if [[ -s "${whitelist_path}" ]]; then
-  WHITELIST=$(cat "${whitelist_path}" | cut -d'#' -f1 | tr -s '[:space:]' ',')
-fi
-
-cd libbpf/selftests/bpf
+cd ${PROJECT_NAME}/selftests/bpf
 
 test_progs
 test_maps
