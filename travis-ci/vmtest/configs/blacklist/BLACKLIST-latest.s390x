@@ -56,4 +56,8 @@ vmlinux                                  # failed to auto-attach program 'handle
 xdp_adjust_tail                          # case-128 err 0 errno 28 retval 1 size 128 expect-size 3520                  (?)
 xdp_bonding                              # failed to auto-attach program 'trace_on_entry': -524                        (trampoline)
 xdp_bpf2bpf                              # failed to auto-attach program 'trace_on_entry': -524                        (trampoline)
-xdp_do_redirect				 # prog_run_max_size unexpected error: -22 (errno 22)
+map_kptr                                 # failed to open_and_load program: -524 (trampoline)
+bpf_cookie                               # failed to open_and_load program: -524 (trampoline)
+xdp_do_redirect                          # prog_run_max_size unexpected error: -22 (errno 22)
+send_signal                              # intermittently fails to receive signal
+select_reuseport                         # intermittently fails on new s390x setup
