@@ -1,0 +1,30 @@
+From 2696f6435ee65c0a693ee858ebd89cfbee4dfddf Mon Sep 17 00:00:00 2001
+From: Andrii Nakryiko <andrii@kernel.org>
+Date: Fri, 1 Apr 2022 19:16:30 -0700
+Subject: [PATCH] Kconfig: DEBUG_INFO_BTF is incompatible with DEBUG_INFO_NONE
+
+CONFIG_DEBUG_INFO_BTF depends on availability of DWARF information, so
+CONFIG_DEBUG_INFO_NONE=y is incompatible with this. Make this explicit
+in Kconfig.
+
+Signed-off-by: Andrii Nakryiko <andrii@kernel.org>
+---
+ lib/Kconfig.debug | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 075cd25363ac..6229755569e7 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -336,7 +336,7 @@ config DEBUG_INFO_SPLIT
+ 
+ config DEBUG_INFO_BTF
+ 	bool "Generate BTF typeinfo"
+-	depends on !DEBUG_INFO_SPLIT && !DEBUG_INFO_REDUCED
++	depends on !DEBUG_INFO_NONE && !DEBUG_INFO_SPLIT && !DEBUG_INFO_REDUCED
+ 	depends on !GCC_PLUGIN_RANDSTRUCT || COMPILE_TEST
+ 	depends on BPF_SYSCALL
+ 	depends on !DEBUG_INFO_DWARF5 || PAHOLE_VERSION >= 121
+-- 
+2.30.2
+
