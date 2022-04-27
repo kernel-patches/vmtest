@@ -53,6 +53,12 @@ test_verifier() {
 
 travis_fold end vm_init
 
+travis_fold start kernel_config "Kconfig"
+
+zcat /proc/config.gz
+
+travis_fold end kernel_config
+
 configs_path=${PROJECT_NAME}/vmtest/configs
 BLACKLIST=$(read_lists "$configs_path/blacklist/BLACKLIST-${KERNEL}" "$configs_path/blacklist/BLACKLIST-${KERNEL}.${ARCH}")
 WHITELIST=$(read_lists "$configs_path/whitelist/WHITELIST-${KERNEL}" "$configs_path/whitelist/WHITELIST-${KERNEL}.${ARCH}")
