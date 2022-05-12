@@ -5,6 +5,10 @@ inputs:
     description: 'what arch to test'
     required: true
     default: 'x86_64'
+  toolchain:
+    description: 'what toolchain to use'
+    required: true
+    default: 'gcc'
 runs:
   using: "composite"
   steps:
@@ -14,10 +18,10 @@ runs:
     # 2. Build
     - name: Build kernel image
       shell: bash
-      run: ${GITHUB_ACTION_PATH}/build.sh ${{ inputs.arch }}
+      run: ${GITHUB_ACTION_PATH}/build.sh ${{ inputs.arch }} ${{ inputs.toolchain }}
     - name: Build selftests
       shell: bash
-      run: ${GITHUB_ACTION_PATH}/build_selftests.sh
+      run: ${GITHUB_ACTION_PATH}/build_selftests.sh ${{ inputs.toolchain }}
       env:
         VMLINUX_BTF: ${{ github.workspace }}/vmlinux
     # 3. Test

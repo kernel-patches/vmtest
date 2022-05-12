@@ -10,7 +10,7 @@ concurrency:
 jobs:
   VM_Test:
     runs-on: ${{ matrix.runs_on }}
-    name: Kernel ${{ matrix.kernel }} on ${{ matrix.runs_on }} + selftests
+    name: Kernel ${{ matrix.kernel }} on ${{ matrix.runs_on }} with ${{ matrix.toolchain }}
     timeout-minutes: 100
     strategy:
       fail-fast: false
@@ -19,9 +19,15 @@ jobs:
           - kernel: 'LATEST'
             runs_on: ubuntu-latest
             arch: 'x86_64'
+            toolchain: 'gcc'
+          - kernel: 'LATEST'
+            runs_on: ubuntu-latest
+            arch: 'x86_64'
+            toolchain: 'llvm-15'
           - kernel: 'LATEST'
             runs_on: z15
             arch: 's390x'
+            toolchain: 'gcc'
     env:
       AUTHOR_EMAIL: "$(git log -1 --pretty=\"%aE\")"
       KERNEL: LATEST
@@ -48,3 +54,4 @@ jobs:
       - uses: ./.github/actions/vmtest
         with:
           arch: ${{ matrix.arch }}
+          toolchain: ${{ matrix.toolchain }}
