@@ -2,3 +2,4 @@
 btf_dump/btf_dump: syntax
 kprobe_multi_test/bench_attach
 core_reloc/enum64val
+varlen
