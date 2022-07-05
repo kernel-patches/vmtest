@@ -3,10 +3,6 @@ name: bpf-ci
 on:
   pull_request:
 
-concurrency: 
-  group: ci-test-${{ github.head_ref }}
-  cancel-in-progress: true
-
 jobs:
   llvm-toolchain:
     runs-on: ubuntu-latest
@@ -14,7 +10,7 @@ jobs:
       llvm: ${{ steps.llvm-toolchain-impl.outputs.version }}
     steps:
       - id: llvm-version
-        uses: libbpf/ci/get-llvm-version@master
+        uses: danielocfb/libbpf-ci/get-llvm-version@topic/ci
       - id: llvm-toolchain-impl
         shell: bash
         run: echo "::set-output name=version::llvm-${{ steps.llvm-version.outputs.version }}"
@@ -44,10 +40,10 @@ jobs:
       REPO_ROOT: ${{ github.workspace }}
       REPO_PATH: ""
     steps:
-      - uses: actions/checkout@v2
+      - uses: danielocfb/checkout@main
       - if: ${{ github.repository == 'kernel-patches/vmtest' }}
         name: Download bpf-next tree
-        uses: libbpf/ci/get-linux-source@master
+        uses: danielocfb/libbpf-ci/get-linux-source@topic/ci
         with:
           dest: '.kernel'
       - if: ${{ github.repository == 'kernel-patches/vmtest' }}
@@ -57,24 +53,24 @@ jobs:
           rm -rf .kernel/.git
           cp -rf .kernel/. .
           rm -rf .kernel
-      - uses: libbpf/ci/patch-kernel@master
+      - uses: danielocfb/libbpf-ci/patch-kernel@topic/ci
         with:
           patches-root: '${{ github.workspace }}/travis-ci/diffs'
           repo-root: '${{ github.workspace }}'
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@master
+        uses: danielocfb/libbpf-ci/setup-build-env@topic/ci
       - name: Build kernel image
-        uses: libbpf/ci/build-linux@master
+        uses: danielocfb/libbpf-ci/build-linux@topic/ci
         with:
           arch: ${{ matrix.arch }}
           toolchain: ${{ matrix.toolchain }}
       - name: Build selftests
-        uses: libbpf/ci/build-selftests@master
+        uses: danielocfb/libbpf-ci/build-selftests@topic/ci
         with:
           vmlinux_btf: ${{ github.workspace }}/vmlinux
           toolchain: ${{ matrix.toolchain }}
       - name: Build samples
-        uses: libbpf/ci/build-samples@master
+        uses: danielocfb/libbpf-ci/build-samples@topic/ci
         with:
           vmlinux_btf: ${{ github.workspace }}/vmlinux
           toolchain: ${{ matrix.toolchain }}
@@ -114,14 +110,14 @@ jobs:
       - name: Untar artifacts
         run: tar -xzf vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.gz
       - name: Prepare rootfs
-        uses: libbpf/ci/prepare-rootfs@master
+        uses: danielocfb/libbpf-ci/prepare-rootfs@topic/ci
         with:
           project-name: 'libbpf'
           arch: ${{ matrix.arch }}
           kernel-root: '.'
           image-output: '/tmp/root.img'
       - name: Run selftests
-        uses: libbpf/ci/run-qemu@master
+        uses: danielocfb/libbpf-ci/run-qemu@topic/ci
         with:
           arch: ${{ matrix.arch}}
           img: '/tmp/root.img'
