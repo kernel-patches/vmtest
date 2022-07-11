@@ -17,7 +17,7 @@ else
 LLVM_VER=15
 fi
 
-travis_fold start prepare_selftests "Building selftests with $TOOLCHAIN"
+foldable start prepare_selftests "Building selftests with $TOOLCHAIN"
 
 LIBBPF_PATH="${REPO_ROOT}"
 
@@ -49,4 +49,4 @@ cd "${LIBBPF_PATH}"
 rm selftests/bpf/.gitignore
 git add selftests
 
-travis_fold end prepare_selftests
+foldable end prepare_selftests
