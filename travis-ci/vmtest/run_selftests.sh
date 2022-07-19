@@ -23,41 +23,41 @@ TEST_PROGS_ARGS=""
 # fi
 
 test_progs() {
-  travis_fold start test_progs "Testing test_progs"
+  foldable start test_progs "Testing test_progs"
   # "&& true" does not change the return code (it is not executed
   # if the Python script fails), but it prevents exiting on a
   # failure due to the "set -e".
   ./test_progs ${BLACKLIST:+-b"$BLACKLIST"} ${WHITELIST:+-t"$WHITELIST"} ${TEST_PROGS_ARGS} && true
   echo "test_progs:$?" >>"${STATUS_FILE}"
-  travis_fold end test_progs
+  foldable end test_progs
 
-  travis_fold start test_progs-no_alu32 "Testing test_progs-no_alu32"
+  foldable start test_progs-no_alu32 "Testing test_progs-no_alu32"
   ./test_progs-no_alu32 ${BLACKLIST:+-b"$BLACKLIST"} ${WHITELIST:+-t"$WHITELIST"} ${TEST_PROGS_ARGS} && true
   echo "test_progs-no_alu32:$?" >>"${STATUS_FILE}"
-  travis_fold end test_progs-no_alu32
+  foldable end test_progs-no_alu32
 }
 
 test_maps() {
-  travis_fold start test_maps "Testing test_maps"
+  foldable start test_maps "Testing test_maps"
   taskset 0xF ./test_maps && true
   echo "test_maps:$?" >>"${STATUS_FILE}"
-  travis_fold end test_maps
+  foldable end test_maps
 }
 
 test_verifier() {
-  travis_fold start test_verifier "Testing test_verifier"
+  foldable start test_verifier "Testing test_verifier"
   ./test_verifier && true
   echo "test_verifier:$?" >>"${STATUS_FILE}"
-  travis_fold end test_verifier
+  foldable end test_verifier
 }
 
-travis_fold end vm_init
+foldable end vm_init
 
-travis_fold start kernel_config "Kconfig"
+foldable start kernel_config "Kconfig"
 
 zcat /proc/config.gz
 
-travis_fold end kernel_config
+foldable end kernel_config
 
 configs_path=${PROJECT_NAME}/vmtest/configs
 BLACKLIST=$(read_lists "$configs_path/blacklist/BLACKLIST-${KERNEL}" "$configs_path/blacklist/BLACKLIST-${KERNEL}.${ARCH}")
