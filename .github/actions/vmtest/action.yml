@@ -20,10 +20,10 @@ runs:
       shell: bash
       run: ${GITHUB_ACTION_PATH}/build.sh ${{ inputs.arch }} ${{ inputs.toolchain }}
     - name: Build selftests
-      shell: bash
-      run: ${GITHUB_ACTION_PATH}/build_selftests.sh ${{ inputs.toolchain }}
-      env:
-        VMLINUX_BTF: ${{ github.workspace }}/vmlinux
+      uses: libbpf/ci/build-selftests@master
+      with:
+        vmlinux_btf: ${{ github.workspace }}/vmlinux
+        toolchain: ${{ inputs.toolchain }}
     - name: Build samples
       uses: libbpf/ci/build-samples@master
       with:
