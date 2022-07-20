@@ -24,6 +24,11 @@ runs:
       run: ${GITHUB_ACTION_PATH}/build_selftests.sh ${{ inputs.toolchain }}
       env:
         VMLINUX_BTF: ${{ github.workspace }}/vmlinux
+    - name: Build samples
+      uses: libbpf/ci/build-samples@master
+      with:
+        vmlinux_btf: ${{ github.workspace }}/vmlinux
+        toolchain: ${{ inputs.toolchain }}
     # 3. Test
     - name: Prepare rootfs
       uses: libbpf/ci/prepare-rootfs@master
