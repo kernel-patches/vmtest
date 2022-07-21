@@ -51,7 +51,32 @@ jobs:
         with:
           patches-root: '${{ github.workspace }}/travis-ci/diffs'
           repo-root: '${{ github.workspace }}'
-      - uses: ./.github/actions/vmtest
+      - name: Setup build environment
+        uses: libbpf/ci/setup-build-env@master
+      - name: Build kernel image
+        uses: libbpf/ci/build-linux@master
         with:
           arch: ${{ matrix.arch }}
           toolchain: ${{ matrix.toolchain }}
+      - name: Build selftests
+        uses: libbpf/ci/build-selftests@master
+        with:
+          vmlinux_btf: ${{ github.workspace }}/vmlinux
+          toolchain: ${{ matrix.toolchain }}
+      - name: Build samples
+        uses: libbpf/ci/build-samples@master
+        with:
+          vmlinux_btf: ${{ github.workspace }}/vmlinux
+          toolchain: ${{ matrix.toolchain }}
+      - name: Prepare rootfs
+        uses: libbpf/ci/prepare-rootfs@master
+        with:
+          project-name: 'libbpf'
+          arch: ${{ matrix.arch }}
+          kernel-root: '.'
+      - name: Run selftests
+        uses: libbpf/ci/run-qemu@master
+        with:
+          arch: ${{ matrix.arch}}
+          img: '/tmp/root.img'
+          vmlinuz: '${{ github.workspace }}/vmlinuz'
