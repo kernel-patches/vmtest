@@ -17,8 +17,10 @@ runs:
       uses: libbpf/ci/setup-build-env@master
     # 2. Build
     - name: Build kernel image
-      shell: bash
-      run: ${GITHUB_ACTION_PATH}/build.sh ${{ inputs.arch }} ${{ inputs.toolchain }}
+      uses: libbpf/ci/build-linux@master
+      with:
+        arch: ${{ inputs.arch }}
+        toolchain: ${{ inputs.toolchain }}
     - name: Build selftests
       uses: libbpf/ci/build-selftests@master
       with:
