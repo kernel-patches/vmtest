@@ -2,6 +2,10 @@ name: bpf-ci
 
 on:
   pull_request:
+  push:
+    branches:
+      - bpf_base
+      - bpf-next_base
 
 concurrency:
   group: ci-test-${{ github.head_ref }}
@@ -116,6 +120,10 @@ jobs:
       KBUILD_OUTPUT: kbuild-output/
     steps:
       - uses: actions/checkout@v3
+        # We fetch an actual bit of history here to facilitate incremental
+        # builds (which may check out some earlier upstream change).
+        with:
+          fetch-depth: 50
       - if: ${{ github.repository == 'kernel-patches/vmtest' }}
         name: Download bpf-next tree
         uses: libbpf/ci/get-linux-source@master
@@ -128,6 +136,59 @@ jobs:
           rm -rf .kernel/.git
           cp -rf .kernel/. .
           rm -rf .kernel
+      - if: ${{ github.repository != 'kernel-patches/vmtest' }}
+        name: Get commit meta-data
+        id: get-commit-metadata
+        shell: bash
+        run: |
+          echo "timestamp=$(git show --format='%ct' --no-patch)" >> "${GITHUB_OUTPUT}"
+      - if: ${{ github.repository != 'kernel-patches/vmtest' }}
+        name: Pull recent KBUILD_OUTPUT contents
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.KBUILD_OUTPUT }}
+          key: kbuild-output-${{ runner.os }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.timestamp }}-${{ github.sha }}
+          restore-keys: |
+            kbuild-output-${{ runner.os }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.timestamp }}-
+            kbuild-output-${{ runner.os }}-${{ matrix.toolchain }}-
+      - if: ${{ github.repository != 'kernel-patches/vmtest' }}
+        name: Prepare incremental build
+        shell: bash
+        run: |
+          set -e -u
+
+          mkdir --parents "${KBUILD_OUTPUT}"
+          build_base_sha="${{ github.sha }}"
+          echo "Using build base SHA-1 ${build_base_sha}"
+
+          if [ -f "${KBUILD_OUTPUT}/.build-base-sha" -a -f "${KBUILD_OUTPUT}/.build-timestamp" ]; then
+            build_base_sha="$(cat "${KBUILD_OUTPUT}/.build-base-sha")"
+            build_timestamp="$(cat "${KBUILD_OUTPUT}/.build-timestamp")"
+            echo "Setting up build state for ${build_base_sha} @ ${build_timestamp}"
+
+            (
+              git checkout --quiet "${build_base_sha}" || (
+                # If cached artifacts became stale for one reason or another, we
+                # may not have the build base SHA available. Fetch it and retry.
+                git fetch origin "${build_base_sha}" &&
+                git checkout --quiet "${build_base_sha}"
+              ) || (
+                echo "Unable to find earlier upstream ref. Discarding KBUILD_OUTPUT contents..."
+                rm --recursive --force "${KBUILD_OUTPUT}"
+                mkdir "${KBUILD_OUTPUT}"
+                false
+              )
+            ) && (
+              git ls-files | xargs --max-args=10000 touch -m --no-create --date="${build_timestamp}"
+              git checkout --quiet -
+              echo "Restored source code time stamp to time of last build"
+            )
+          else
+            echo "No previous build data found"
+          fi
+
+          echo -n "${build_base_sha}" > "${KBUILD_OUTPUT}/.build-base-sha"
+          echo -n "$(date --iso-8601=ns)" > "${KBUILD_OUTPUT}/.build-timestamp"
       - uses: libbpf/ci/patch-kernel@master
         with:
           patches-root: '${{ github.workspace }}/ci/diffs'
@@ -175,12 +236,21 @@ jobs:
             ${file_list} \
             --exclude '*.h' \
             selftests/bpf/ | zstd -T0 -19 -o vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
+      - if: ${{ github.repository != 'kernel-patches/vmtest' && github.event_name != 'push' }}
+        name: Remove KBUILD_OUTPUT contents
+        shell: bash
+        run: |
+          # Remove $KBUILD_OUTPUT to prevent cache creation for pull requests.
+          # Only on pushed changes are build artifacts actually cached, because
+          # of github.com/action/cache's cache isolation logic.
+          rm -rf "${KBUILD_OUTPUT}"
       - uses: actions/upload-artifact@v3
         with:
           name: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}
           if-no-files-found: error
           path: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
   test:
+    if: ${{ github.event_name != 'push' }}
     name: ${{ matrix.test }} on ${{ matrix.arch }} with ${{ matrix.toolchain }}
     needs: [set-matrix, build]
     strategy:
