@@ -60,8 +60,19 @@ zcat /proc/config.gz
 foldable end kernel_config
 
 configs_path=${PROJECT_NAME}/selftests/bpf
-DENYLIST=$(read_lists "$configs_path/DENYLIST" "$configs_path/DENYLIST.${ARCH}")
-ALLOWLIST=$(read_lists "$configs_path/ALLOWLIST" "$configs_path/ALLOWLIST.${ARCH}")
+local_configs_path=${PROJECT_NAME}/vmtest/configs
+DENYLIST=$(read_lists \
+	"$configs_path/DENYLIST" \
+	"$configs_path/DENYLIST.${ARCH}" \
+	"$local_configs_path/DENYLIST" \
+	"$local_configs_path/DENYLIST.${ARCH}" \
+)
+ALLOWLIST=$(read_lists \
+	"$configs_path/ALLOWLIST" \
+	"$configs_path/ALLOWLIST.${ARCH}" \
+	"$local_configs_path/ALLOWLIST" \
+	"$local_configs_path/ALLOWLIST.${ARCH}" \
+)
 
 cd ${PROJECT_NAME}/selftests/bpf
 
