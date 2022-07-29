@@ -10,7 +10,7 @@ concurrency:
 jobs:
   VM_Test:
     runs-on: ${{ matrix.runs_on }}
-    name: Kernel ${{ matrix.kernel }} on ${{ matrix.runs_on }} with ${{ matrix.toolchain }}
+    name: Kernel ${{ matrix.kernel }} on ${{ matrix.runs_on[0] }} with ${{ matrix.toolchain }}
     timeout-minutes: 100
     strategy:
       fail-fast: false
