@@ -23,7 +23,7 @@ jobs:
           - kernel: 'LATEST'
             runs_on: [ubuntu-latest, self-hosted]
             arch: 'x86_64'
-            toolchain: 'llvm-15'
+            toolchain: 'llvm-16'
           - kernel: 'LATEST'
             runs_on: [z15, self-hosted]
             arch: 's390x'
