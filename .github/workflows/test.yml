@@ -8,7 +8,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  llvm-toolchain:
+    runs-on: ubuntu-latest
+    outputs:
+      llvm: ${{ steps.llvm-toolchain-impl.outputs.version }}
+    steps:
+      - id: llvm-version
+        uses: libbpf/ci/get-llvm-version@master
+      - id: llvm-toolchain-impl
+        shell: bash
+        run: echo "::set-output name=version::llvm-${{ steps.llvm-version.outputs.version }}"
   VM_Test:
+    needs: llvm-toolchain
     runs-on: ${{ matrix.runs_on }}
     name: Kernel ${{ matrix.kernel }} on ${{ matrix.runs_on[0] }} with ${{ matrix.toolchain }}
     timeout-minutes: 100
@@ -23,7 +34,7 @@ jobs:
           - kernel: 'LATEST'
             runs_on: [ubuntu-latest, self-hosted]
             arch: 'x86_64'
-            toolchain: 'llvm-16'
+            toolchain: ${{ needs.llvm-toolchain.outputs.llvm }}
           - kernel: 'LATEST'
             runs_on: [z15, self-hosted]
             arch: 's390x'
