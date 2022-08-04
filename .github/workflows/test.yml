@@ -18,27 +18,27 @@ jobs:
       - id: llvm-toolchain-impl
         shell: bash
         run: echo "::set-output name=version::llvm-${{ steps.llvm-version.outputs.version }}"
-  VM_Test:
+  set-matrix:
     needs: llvm-toolchain
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          echo "::set-output name=matrix::{\"include\":[ \
+            {\"kernel\": \"LATEST\", \"runs_on\": [\"ubuntu-latest\", \"self-hosted\"], \"arch\": \"x86_64\", \"toolchain\": \"gcc\"}, \
+            {\"kernel\": \"LATEST\", \"runs_on\": [\"ubuntu-latest\", \"self-hosted\"], \"arch\": \"x86_64\", \"toolchain\": \"${{ needs.llvm-toolchain.outputs.llvm }}\"}, \
+            {\"kernel\": \"LATEST\", \"runs_on\": [\"z15\", \"self-hosted\"], \"arch\": \"s390x\", \"toolchain\": \"gcc\"} \
+          ]}"
+  VM_Test:
+    needs: set-matrix
     runs-on: ${{ matrix.runs_on }}
     name: Kernel ${{ matrix.kernel }} on ${{ matrix.runs_on[0] }} with ${{ matrix.toolchain }}
     timeout-minutes: 100
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - kernel: 'LATEST'
-            runs_on: [ubuntu-latest, self-hosted]
-            arch: 'x86_64'
-            toolchain: 'gcc'
-          - kernel: 'LATEST'
-            runs_on: [ubuntu-latest, self-hosted]
-            arch: 'x86_64'
-            toolchain: ${{ needs.llvm-toolchain.outputs.llvm }}
-          - kernel: 'LATEST'
-            runs_on: [z15, self-hosted]
-            arch: 's390x'
-            toolchain: 'gcc'
+      matrix: ${{ fromJSON(needs.set-matrix.outputs.matrix) }}
     env:
       KERNEL: LATEST
       REPO_ROOT: ${{ github.workspace }}
