@@ -27,12 +27,12 @@ test_progs() {
   # "&& true" does not change the return code (it is not executed
   # if the Python script fails), but it prevents exiting on a
   # failure due to the "set -e".
-  ./test_progs ${DENYLIST:+-b"$DENYLIST"} ${ALLOWLIST:+-t"$ALLOWLIST"} ${TEST_PROGS_ARGS} && true
+  ./test_progs ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} ${TEST_PROGS_ARGS} && true
   echo "test_progs:$?" >>"${STATUS_FILE}"
   foldable end test_progs
 
   foldable start test_progs-no_alu32 "Testing test_progs-no_alu32"
-  ./test_progs-no_alu32 ${DENYLIST:+-b"$DENYLIST"} ${ALLOWLIST:+-t"$ALLOWLIST"} ${TEST_PROGS_ARGS} && true
+  ./test_progs-no_alu32 ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} ${TEST_PROGS_ARGS} && true
   echo "test_progs-no_alu32:$?" >>"${STATUS_FILE}"
   foldable end test_progs-no_alu32
 }
