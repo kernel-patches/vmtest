@@ -30,7 +30,9 @@ test_progs() {
   ./test_progs ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} ${TEST_PROGS_ARGS} && true
   echo "test_progs:$?" >>"${STATUS_FILE}"
   foldable end test_progs
+}
 
+test_progs_noalu() {
   foldable start test_progs-no_alu32 "Testing test_progs-no_alu32"
   ./test_progs-no_alu32 ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} ${TEST_PROGS_ARGS} && true
   echo "test_progs-no_alu32:$?" >>"${STATUS_FILE}"
@@ -77,5 +79,6 @@ ALLOWLIST=$(read_lists \
 cd ${PROJECT_NAME}/selftests/bpf
 
 test_progs
+test_progs_noalu
 test_maps
 test_verifier
