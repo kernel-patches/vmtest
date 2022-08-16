@@ -84,6 +84,7 @@ jobs:
           project-name: 'libbpf'
           arch: ${{ matrix.arch }}
           kernel-root: '.'
+          image-output: '/tmp/root.img'
       - name: Run selftests
         uses: libbpf/ci/run-qemu@master
         with:
