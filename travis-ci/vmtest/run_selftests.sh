@@ -74,6 +74,9 @@ ALLOWLIST=$(read_lists \
 	"$local_configs_path/ALLOWLIST.${ARCH}" \
 )
 
+echo "DENYLIST: ${DENYLIST}"
+echo "ALLOWLIST: ${ALLOWLIST}"
+
 cd ${PROJECT_NAME}/selftests/bpf
 
 test_progs
