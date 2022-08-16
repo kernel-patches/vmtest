@@ -40,7 +40,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.set-matrix.outputs.matrix) }}
     env:
-      KERNEL: LATEST
+      KERNEL: ${{ matrix.kernel }}
       REPO_ROOT: ${{ github.workspace }}
       REPO_PATH: ""
     steps:
