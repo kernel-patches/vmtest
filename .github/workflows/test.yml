@@ -59,7 +59,7 @@ jobs:
           rm -rf .kernel
       - uses: libbpf/ci/patch-kernel@master
         with:
-          patches-root: '${{ github.workspace }}/travis-ci/diffs'
+          patches-root: '${{ github.workspace }}/ci/diffs'
           repo-root: '${{ github.workspace }}'
       - name: Setup build environment
         uses: libbpf/ci/setup-build-env@master
