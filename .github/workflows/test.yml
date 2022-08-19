@@ -14,7 +14,7 @@ jobs:
       llvm: ${{ steps.llvm-toolchain-impl.outputs.version }}
     steps:
       - id: llvm-version
-        uses: libbpf/ci/get-llvm-version@master
+        uses: libbpf/ci/get-llvm-version@da44c0b6ee29ec53776c1303f7ac790b7e337db5
       - id: llvm-toolchain-impl
         shell: bash
         run: echo "::set-output name=version::llvm-${{ steps.llvm-version.outputs.version }}"
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v2
       - if: ${{ github.repository == 'kernel-patches/vmtest' }}
         name: Download bpf-next tree
-        uses: libbpf/ci/get-linux-source@master
+        uses: libbpf/ci/get-linux-source@da44c0b6ee29ec53776c1303f7ac790b7e337db5
         with:
           dest: '.kernel'
       - if: ${{ github.repository == 'kernel-patches/vmtest' }}
@@ -57,36 +57,36 @@ jobs:
           rm -rf .kernel/.git
           cp -rf .kernel/. .
           rm -rf .kernel
-      - uses: libbpf/ci/patch-kernel@master
+      - uses: libbpf/ci/patch-kernel@da44c0b6ee29ec53776c1303f7ac790b7e337db5
         with:
           patches-root: '${{ github.workspace }}/travis-ci/diffs'
           repo-root: '${{ github.workspace }}'
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@master
+        uses: libbpf/ci/setup-build-env@da44c0b6ee29ec53776c1303f7ac790b7e337db5
       - name: Build kernel image
-        uses: libbpf/ci/build-linux@master
+        uses: libbpf/ci/build-linux@da44c0b6ee29ec53776c1303f7ac790b7e337db5
         with:
           arch: ${{ matrix.arch }}
           toolchain: ${{ matrix.toolchain }}
       - name: Build selftests
-        uses: libbpf/ci/build-selftests@master
+        uses: libbpf/ci/build-selftests@da44c0b6ee29ec53776c1303f7ac790b7e337db5
         with:
           vmlinux_btf: ${{ github.workspace }}/vmlinux
           toolchain: ${{ matrix.toolchain }}
       - name: Build samples
-        uses: libbpf/ci/build-samples@master
+        uses: libbpf/ci/build-samples@da44c0b6ee29ec53776c1303f7ac790b7e337db5
         with:
           vmlinux_btf: ${{ github.workspace }}/vmlinux
           toolchain: ${{ matrix.toolchain }}
       - name: Prepare rootfs
-        uses: libbpf/ci/prepare-rootfs@master
+        uses: libbpf/ci/prepare-rootfs@da44c0b6ee29ec53776c1303f7ac790b7e337db5
         with:
           project-name: 'libbpf'
           arch: ${{ matrix.arch }}
           kernel-root: '.'
           image-output: '/tmp/root.img'
       - name: Run selftests
-        uses: libbpf/ci/run-qemu@master
+        uses: libbpf/ci/run-qemu@da44c0b6ee29ec53776c1303f7ac790b7e337db5
         with:
           arch: ${{ matrix.arch}}
           img: '/tmp/root.img'
