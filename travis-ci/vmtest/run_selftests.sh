@@ -32,7 +32,7 @@ test_progs() {
   foldable end test_progs
 }
 
-test_progs_noalu() {
+test_progs_no_alu32() {
   foldable start test_progs-no_alu32 "Testing test_progs-no_alu32"
   ./test_progs-no_alu32 ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} ${TEST_PROGS_ARGS} && true
   echo "test_progs-no_alu32:$?" >>"${STATUS_FILE}"
@@ -83,7 +83,7 @@ cd ${PROJECT_NAME}/selftests/bpf
 
 if [ $# -eq 0 ]; then
 	test_progs
-	test_progs_noalu
+	test_progs_no_alu32
 	test_maps
 	test_verifier
 else
