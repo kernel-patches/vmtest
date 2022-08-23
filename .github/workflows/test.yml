@@ -22,7 +22,8 @@ jobs:
     needs: llvm-toolchain
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
+      build-matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
+      test-matrix: ${{ steps.set-matrix-impl.outputs.test_matrix }}
     steps:
       - id: set-matrix-impl
         shell: python3 -I {0}
@@ -36,6 +37,12 @@ jobs:
           ]
           build_matrix = {"include": matrix}
           print(f"::set-output name=build_matrix::{dumps(build_matrix)}")
+
+          tests = ["test_progs", "test_progs_no_alu32", "test_maps", "test_verifier"]
+          test_matrix = {"include": [{**config, **{"test": test}}
+                                      for config in matrix
+                                        for test in tests]}
+          print(f"::set-output name=test_matrix::{dumps(test_matrix)}")
   build:
     needs: set-matrix
     runs-on: ${{ matrix.runs_on }}
@@ -43,7 +50,7 @@ jobs:
     timeout-minutes: 100
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.set-matrix.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.set-matrix.outputs.build-matrix) }}
     env:
       KERNEL: ${{ matrix.kernel }}
       REPO_ROOT: ${{ github.workspace }}
@@ -114,7 +121,7 @@ jobs:
     needs: [set-matrix, build]
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.set-matrix.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.set-matrix.outputs.test-matrix) }}
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 100
     env:
@@ -136,6 +143,7 @@ jobs:
           arch: ${{ matrix.arch }}
           kernel-root: '.'
           image-output: '/tmp/root.img'
+          test: ${{ matrix.test }}
       - name: Run selftests
         uses: libbpf/ci/run-qemu@master
         with:
