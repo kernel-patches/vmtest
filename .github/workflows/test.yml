@@ -76,11 +76,17 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
       - name: Tar artifacts
         run: |
+          file_list=""
+          if [ ${{ github.repository }} == 'kernel-patches/vmtest' ]; then
+            file_list="$(find . -iname Makefile | xargs) scripts/";
+          fi
+
           tar -czf vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.gz \
             .config \
             arch/*/boot/bzImage \
             include/config/auto.conf \
             include/generated/autoconf.h \
+            ${file_list} \
             --exclude '*.h' \
             --exclude '*.c' \
             selftests/bpf/ \
