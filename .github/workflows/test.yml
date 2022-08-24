@@ -44,9 +44,9 @@ jobs:
                                         for test in tests]}
           print(f"::set-output name=test_matrix::{dumps(test_matrix)}")
   build:
+    name: build for ${{ matrix.arch }} with ${{ matrix.toolchain }}
     needs: set-matrix
     runs-on: ${{ matrix.runs_on }}
-    name: Kernel ${{ matrix.kernel }} on ${{ matrix.runs_on[0] }} with ${{ matrix.toolchain }}
     timeout-minutes: 100
     strategy:
       fail-fast: false
@@ -118,6 +118,7 @@ jobs:
           if-no-files-found: error
           path: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.gz
   test:
+    name: ${{ matrix.test }} on ${{ matrix.arch }} with ${{ matrix.toolchain }}
     needs: [set-matrix, build]
     strategy:
       fail-fast: false
