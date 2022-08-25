@@ -35,6 +35,16 @@ jobs:
             {"kernel": "LATEST", "runs_on": ["ubuntu-latest", "self-hosted"], "arch": "x86_64", "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
             {"kernel": "LATEST", "runs_on": ["z15", "self-hosted"], "arch": "s390x", "toolchain": "gcc"},
           ]
+
+          if "${{ github.repository_owner }}" != "kernel-patches":
+            # Outside of kernel-patches, remove the self-hosted label and skip
+            # any testing on s390x, as no suitable runners will be available.
+            for idx in range(len(matrix) - 1, -1, -1):
+              if "z15" in matrix[idx]["runs_on"]:
+                del matrix[idx]
+              else:
+                matrix[idx]["runs_on"].remove("self-hosted")
+
           build_matrix = {"include": matrix}
           print(f"::set-output name=build_matrix::{dumps(build_matrix)}")
 
