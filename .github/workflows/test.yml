@@ -162,3 +162,4 @@ jobs:
           arch: ${{ matrix.arch}}
           img: '/tmp/root.img'
           vmlinuz: '${{ github.workspace }}/vmlinuz'
+          kernel-root: '.'
