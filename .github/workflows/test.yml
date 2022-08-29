@@ -152,6 +152,7 @@ jobs:
         with:
           project-name: 'libbpf'
           arch: ${{ matrix.arch }}
+          kernel: ${{ matrix.kernel }}
           kernel-root: '.'
           image-output: '/tmp/root.img'
           test: ${{ matrix.test }}
