@@ -35,9 +35,14 @@ jobs:
             {"kernel": "LATEST", "runs_on": ["ubuntu-latest", "self-hosted"], "arch": "x86_64", "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
             {"kernel": "LATEST", "runs_on": ["z15", "self-hosted"], "arch": "s390x", "toolchain": "gcc"},
           ]
+          self_hosted_repos = [
+            "kernel-patches/bpf",
+            "kernel-patches/vmtest",
+          ]
 
-          if "${{ github.repository_owner }}" != "kernel-patches":
-            # Outside of kernel-patches, remove the self-hosted label and skip
+          # Only a few repository within "kernel-patches" use self-hosted runners.
+          if "${{ github.repository_owner }}" != "kernel-patches" or "${{ github.repository }}" not in self_hosted_repos:
+            # Outside of those repositories, remove the self-hosted label and skip
             # any testing on s390x, as no suitable runners will be available.
             for idx in range(len(matrix) - 1, -1, -1):
               if "z15" in matrix[idx]["runs_on"]:
