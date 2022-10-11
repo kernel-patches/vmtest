@@ -71,7 +71,7 @@ jobs:
       REPO_ROOT: ${{ github.workspace }}
       REPO_PATH: ""
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - if: ${{ github.repository == 'kernel-patches/vmtest' }}
         name: Download bpf-next tree
         uses: libbpf/ci/get-linux-source@master
@@ -145,7 +145,7 @@ jobs:
       REPO_ROOT: ${{ github.workspace }}
       REPO_PATH: ""
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
           name: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}
