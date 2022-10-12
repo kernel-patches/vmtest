@@ -3,7 +3,7 @@ name: bpf-ci
 on:
   pull_request:
 
-concurrency: 
+concurrency:
   group: ci-test-${{ github.head_ref }}
   cancel-in-progress: true
 
@@ -17,7 +17,7 @@ jobs:
         uses: libbpf/ci/get-llvm-version@master
       - id: llvm-toolchain-impl
         shell: bash
-        run: echo "::set-output name=version::llvm-${{ steps.llvm-version.outputs.version }}"
+        run: echo "version=llvm-${{ steps.llvm-version.outputs.version }}" >> $GITHUB_OUTPUT
   set-matrix:
     needs: llvm-toolchain
     runs-on: ubuntu-latest
@@ -29,6 +29,12 @@ jobs:
         shell: python3 -I {0}
         run: |
           from json import dumps
+          import os
+
+          def set_output(name, value):
+            """Write an output variable to the GitHub output file."""
+            with open(os.getenv("GITHUB_OUTPUT"), "a") as f:
+              f.write(f"{name}={value}\n")
 
           matrix = [
             {"kernel": "LATEST", "runs_on": ["ubuntu-latest", "self-hosted"], "arch": "x86_64", "toolchain": "gcc"},
@@ -51,13 +57,13 @@ jobs:
                 matrix[idx]["runs_on"].remove("self-hosted")
 
           build_matrix = {"include": matrix}
-          print(f"::set-output name=build_matrix::{dumps(build_matrix)}")
+          set_output("build_matrix", dumps(build_matrix))
 
           tests = ["test_progs", "test_progs_no_alu32", "test_maps", "test_verifier"]
           test_matrix = {"include": [{**config, **{"test": test}}
                                       for config in matrix
                                         for test in tests]}
-          print(f"::set-output name=test_matrix::{dumps(test_matrix)}")
+          set_output("test_matrix", dumps(test_matrix))
   build:
     name: build for ${{ matrix.arch }} with ${{ matrix.toolchain }}
     needs: set-matrix
