@@ -133,11 +133,12 @@ jobs:
             --exclude '*.h' \
             selftests/bpf/ \
             vmlinux | zstd -T0 -19 -o vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
-      - uses: actions/upload-artifact@v3
+      - uses: chantra/actions-upload-artifact@try_gzip
         with:
           name: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}
           if-no-files-found: error
           path: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
+          try-gzip: false
   test:
     name: ${{ matrix.test }} on ${{ matrix.arch }} with ${{ matrix.toolchain }}
     needs: [set-matrix, build]
