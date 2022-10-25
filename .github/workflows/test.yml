@@ -59,8 +59,15 @@ jobs:
           build_matrix = {"include": matrix}
           set_output("build_matrix", dumps(build_matrix))
 
-          tests = ["test_progs", "test_progs_no_alu32", "test_maps", "test_verifier"]
-          test_matrix = {"include": [{**config, **{"test": test}}
+          tests = [
+            "test_progs",
+            "test_progs_parallel",
+            "test_progs_no_alu32",
+            "test_progs_no_alu32_parallel",
+            "test_maps",
+            "test_verifier",
+          ]
+          test_matrix = {"include": [{**config, **{"test": test, "continue_on_error": test.endswith("_parallel")}}
                                       for config in matrix
                                         for test in tests]}
           set_output("test_matrix", dumps(test_matrix))
@@ -170,6 +177,7 @@ jobs:
           test: ${{ matrix.test }}
       - name: Run selftests
         uses: libbpf/ci/run-qemu@master
+        continue-on-error: ${{ matrix.continue_on_error }}
         with:
           arch: ${{ matrix.arch}}
           img: '/tmp/root.img'

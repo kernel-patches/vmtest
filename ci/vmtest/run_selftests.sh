@@ -65,8 +65,16 @@ test_progs() {
   test_progs_helper "" ""
 }
 
+test_progs_parallel() {
+  test_progs_helper "" "-j"
+}
+
 test_progs_no_alu32() {
   test_progs_helper "-no_alu32" ""
+}
+
+test_progs_no_alu32_parallel() {
+  test_progs_helper "-no_alu32" "-j"
 }
 
 test_maps() {
