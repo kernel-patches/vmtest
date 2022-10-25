@@ -26,12 +26,6 @@ read_lists() {
 	done) | cut -d'#' -f1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | tr -s '\n' ','
 }
 
-TEST_PROGS_ARGS=""
-# Disabled due to issue
-# if [[ "$(nproc)" -gt 2 ]]; then
-#   TEST_PROGS_ARGS="-j"
-# fi
-
 read_test_names() {
     foldable start read_test_names "Reading test names from boot parameters and command line arguments"
     # Check if test names were passed as boot parameter.
@@ -54,21 +48,25 @@ read_test_names() {
     foldable end read_test_names
 }
 
-test_progs() {
-  foldable start test_progs "Testing test_progs"
+test_progs_helper() {
+  local selftest="test_progs${1}"
+  local args="$2"
+
+  foldable start ${selftest} "Testing ${selftest}"
   # "&& true" does not change the return code (it is not executed
   # if the Python script fails), but it prevents exiting on a
   # failure due to the "set -e".
-  ./test_progs ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} ${TEST_PROGS_ARGS} && true
-  echo "test_progs:$?" >>"${STATUS_FILE}"
-  foldable end test_progs
+  ./${selftest} ${args} ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} && true
+  echo "${selftest}:$?" >>"${STATUS_FILE}"
+  foldable end ${selftest}
+}
+
+test_progs() {
+  test_progs_helper "" ""
 }
 
 test_progs_no_alu32() {
-  foldable start test_progs-no_alu32 "Testing test_progs-no_alu32"
-  ./test_progs-no_alu32 ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} ${TEST_PROGS_ARGS} && true
-  echo "test_progs-no_alu32:$?" >>"${STATUS_FILE}"
-  foldable end test_progs-no_alu32
+  test_progs_helper "-no_alu32" ""
 }
 
 test_maps() {
