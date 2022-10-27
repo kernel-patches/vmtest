@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-source $(cd $(dirname $0) && pwd)/helpers.sh
+source "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 
 ARCH=$(uname -m)
 
