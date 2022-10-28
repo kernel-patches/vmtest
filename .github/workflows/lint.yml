@@ -8,6 +8,9 @@ on:
 
 jobs:
   shellcheck:
+    # This workflow gets injected into other Linux repositories, but we don't
+    # want it to run there.
+    if: ${{ github.repository == 'kernel-patches/vmtest' }}
     name: ShellCheck
     runs-on: ubuntu-latest
     steps:
