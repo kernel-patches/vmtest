@@ -102,6 +102,7 @@ jobs:
       KERNEL: ${{ matrix.kernel }}
       REPO_ROOT: ${{ github.workspace }}
       REPO_PATH: ""
+      KBUILD_OUTPUT: kbuild-output/
     steps:
       - uses: actions/checkout@v3
       - if: ${{ github.repository == 'kernel-patches/vmtest' }}
@@ -127,16 +128,17 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           toolchain: ${{ matrix.toolchain }}
+          kbuild-output: ${{ env.KBUILD_OUTPUT }}
       - name: Build selftests
         uses: libbpf/ci/build-selftests@master
         with:
-          vmlinux_btf: ${{ github.workspace }}/vmlinux
           toolchain: ${{ matrix.toolchain }}
+          kbuild-output: ${{ env.KBUILD_OUTPUT }}
       - name: Build samples
         uses: libbpf/ci/build-samples@master
         with:
-          vmlinux_btf: ${{ github.workspace }}/vmlinux
           toolchain: ${{ matrix.toolchain }}
+          kbuild-output: ${{ env.KBUILD_OUTPUT }}
       - name: Tar artifacts
         run: |
           file_list=""
@@ -151,14 +153,14 @@ jobs:
           fi
           # zstd is installed by default in the runner images.
           tar -cf - \
-            .config \
-            arch/*/boot/bzImage \
-            include/config/auto.conf \
-            include/generated/autoconf.h \
+            "${KBUILD_OUTPUT}"/.config \
+            "${KBUILD_OUTPUT}"/arch/*/boot/bzImage \
+            "${KBUILD_OUTPUT}"/include/config/auto.conf \
+            "${KBUILD_OUTPUT}"/include/generated/autoconf.h \
+            "${KBUILD_OUTPUT}"/vmlinux \
             ${file_list} \
             --exclude '*.h' \
-            selftests/bpf/ \
-            vmlinux | zstd -T0 -19 -o vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
+            selftests/bpf/ | zstd -T0 -19 -o vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
       - uses: actions/upload-artifact@v3
         with:
           name: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}
@@ -176,6 +178,7 @@ jobs:
       KERNEL: ${{ matrix.kernel }}
       REPO_ROOT: ${{ github.workspace }}
       REPO_PATH: ""
+      KBUILD_OUTPUT: kbuild-output/
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
@@ -192,6 +195,7 @@ jobs:
           arch: ${{ matrix.arch }}
           kernel: ${{ matrix.kernel }}
           kernel-root: '.'
+          kbuild-output: ${{ env.KBUILD_OUTPUT }}
           image-output: '/tmp/root.img'
           test: ${{ matrix.test }}
       - name: Run selftests
