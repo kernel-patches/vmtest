@@ -38,20 +38,21 @@ jobs:
 
           def generate_test_config(test):
             """Create the configuration for the provided test."""
+            experimental = test.endswith("_parallel")
             config = {
               "test": test,
-              "continue_on_error": test.endswith("_parallel"),
+              "continue_on_error": experimental,
+              # While in experimental mode, parallel jobs may get stuck
+              # anywhere, including in user space where the kernel won't detect
+              # a problem and panic. We add a second layer of (smaller) timeouts
+              # here such that if we get stuck in a parallel run, we hit this
+              # timeout and fail without affecting the overall job success (as
+              # would be the case if we hit the job-wide timeout). For
+              # non-experimental jobs, 360 is the default which will be
+              # superseded by the overall workflow timeout (but we need to
+              # specify something).
+              "timeout_minutes": 30 if experimental else 360,
             }
-
-            # While in experimental mode, parallel jobs may get stuck anywhere,
-            # including in user space where the kernel won't detect a problem
-            # and panic. We add a second layer of (smaller) timeouts here such
-            # that if we get stuck in a parallel run, we hit this timeout and
-            # fail without affecting the overall job success (as would be the
-            # case if we hit the job-wide timeout).
-            if test.endswith("_parallel"):
-              config = {**config, "timeout-minutes": 30}
-
             return config
 
           matrix = [
@@ -196,6 +197,7 @@ jobs:
       - name: Run selftests
         uses: libbpf/ci/run-qemu@master
         continue-on-error: ${{ matrix.continue_on_error }}
+        timeout-minutes: ${{ matrix.timeout_minutes }}
         with:
           arch: ${{ matrix.arch}}
           img: '/tmp/root.img'
