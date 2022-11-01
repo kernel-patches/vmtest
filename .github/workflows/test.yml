@@ -56,9 +56,9 @@ jobs:
             return config
 
           matrix = [
-            {"kernel": "LATEST", "runs_on": ["ubuntu-latest", "self-hosted"], "arch": "x86_64", "toolchain": "gcc"},
-            {"kernel": "LATEST", "runs_on": ["ubuntu-latest", "self-hosted"], "arch": "x86_64", "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
-            {"kernel": "LATEST", "runs_on": ["z15", "self-hosted"], "arch": "s390x", "toolchain": "gcc"},
+            {"kernel": "LATEST", "runs_on": [], "arch": "x86_64", "toolchain": "gcc"},
+            {"kernel": "LATEST", "runs_on": [], "arch": "x86_64", "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
+            {"kernel": "LATEST", "runs_on": [], "arch": "s390x", "toolchain": "gcc"},
           ]
           self_hosted_repos = [
             "kernel-patches/bpf",
@@ -67,13 +67,17 @@ jobs:
 
           # Only a few repository within "kernel-patches" use self-hosted runners.
           if "${{ github.repository_owner }}" != "kernel-patches" or "${{ github.repository }}" not in self_hosted_repos:
-            # Outside of those repositories, remove the self-hosted label and skip
-            # any testing on s390x, as no suitable runners will be available.
+            # Outside of those repositories, we only run on x86_64 GH hosted runners (ubuntu-latest)
+            # else we run on self-hosted + arch
             for idx in range(len(matrix) - 1, -1, -1):
-              if "z15" in matrix[idx]["runs_on"]:
+              if matrix[idx]["arch"] != "x86_64":
                 del matrix[idx]
               else:
-                matrix[idx]["runs_on"].remove("self-hosted")
+                matrix[idx]["runs_on"] = ["ubuntu-latest"]
+          else:
+            # Otherwise, run on (self-hosted, arch) runners
+            for idx in range(len(matrix) - 1, -1, -1):
+              matrix[idx]["runs_on"].extend(["self-hosted", matrix[idx]["arch"]])
 
           build_matrix = {"include": matrix}
           set_output("build_matrix", dumps(build_matrix))
