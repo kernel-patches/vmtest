@@ -36,6 +36,24 @@ jobs:
             with open(os.getenv("GITHUB_OUTPUT"), "a") as f:
               f.write(f"{name}={value}\n")
 
+          def generate_test_config(test):
+            """Create the configuration for the provided test."""
+            config = {
+              "test": test,
+              "continue_on_error": test.endswith("_parallel"),
+            }
+
+            # While in experimental mode, parallel jobs may get stuck anywhere,
+            # including in user space where the kernel won't detect a problem
+            # and panic. We add a second layer of (smaller) timeouts here such
+            # that if we get stuck in a parallel run, we hit this timeout and
+            # fail without affecting the overall job success (as would be the
+            # case if we hit the job-wide timeout).
+            if test.endswith("_parallel"):
+              config = {**config, "timeout-minutes": 30}
+
+            return config
+
           matrix = [
             {"kernel": "LATEST", "runs_on": ["ubuntu-latest", "self-hosted"], "arch": "x86_64", "toolchain": "gcc"},
             {"kernel": "LATEST", "runs_on": ["ubuntu-latest", "self-hosted"], "arch": "x86_64", "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
@@ -67,7 +85,7 @@ jobs:
             "test_maps",
             "test_verifier",
           ]
-          test_matrix = {"include": [{**config, **{"test": test, "continue_on_error": test.endswith("_parallel")}}
+          test_matrix = {"include": [{**config, **generate_test_config(test)}
                                       for config in matrix
                                         for test in tests]}
           set_output("test_matrix", dumps(test_matrix))
