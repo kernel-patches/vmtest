@@ -29,7 +29,15 @@ jobs:
         shell: python3 -I {0}
         run: |
           from json import dumps
+          from enum import Enum
           import os
+
+          class Arch(Enum):
+            """
+            CPU architecture supported by CI.
+            """
+            x86_64 = "x86_64"
+            s390x = "s390x"
 
           def set_output(name, value):
             """Write an output variable to the GitHub output file."""
@@ -56,9 +64,9 @@ jobs:
             return config
 
           matrix = [
-            {"kernel": "LATEST", "runs_on": [], "arch": "x86_64", "toolchain": "gcc"},
-            {"kernel": "LATEST", "runs_on": [], "arch": "x86_64", "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
-            {"kernel": "LATEST", "runs_on": [], "arch": "s390x", "toolchain": "gcc"},
+            {"kernel": "LATEST", "runs_on": [], "arch": Arch.x86_64.value, "toolchain": "gcc"},
+            {"kernel": "LATEST", "runs_on": [], "arch": Arch.x86_64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
+            {"kernel": "LATEST", "runs_on": [], "arch": Arch.s390x.value, "toolchain": "gcc"},
           ]
           self_hosted_repos = [
             "kernel-patches/bpf",
@@ -68,9 +76,8 @@ jobs:
           # Only a few repository within "kernel-patches" use self-hosted runners.
           if "${{ github.repository_owner }}" != "kernel-patches" or "${{ github.repository }}" not in self_hosted_repos:
             # Outside of those repositories, we only run on x86_64 GH hosted runners (ubuntu-latest)
-            # else we run on self-hosted + arch
             for idx in range(len(matrix) - 1, -1, -1):
-              if matrix[idx]["arch"] != "x86_64":
+              if matrix[idx]["arch"] != Arch.x86_64.value:
                 del matrix[idx]
               else:
                 matrix[idx]["runs_on"] = ["ubuntu-latest"]
