@@ -140,16 +140,19 @@ jobs:
           arch: ${{ matrix.arch }}
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
+          max-make-jobs: 32
       - name: Build selftests
         uses: libbpf/ci/build-selftests@master
         with:
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
+          max-make-jobs: 32
       - name: Build samples
         uses: libbpf/ci/build-samples@master
         with:
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
+          max-make-jobs: 32
       - name: Tar artifacts
         run: |
           file_list=""
