@@ -136,14 +136,12 @@ jobs:
           rm -rf .kernel/.git
           cp -rf .kernel/. .
           rm -rf .kernel
-      - if: ${{ github.repository != 'kernel-patches/vmtest' }}
-        name: Get commit meta-data
+      - name: Get commit meta-data
         id: get-commit-metadata
         shell: bash
         run: |
           echo "timestamp=$(git show --format='%ct' --no-patch)" >> "${GITHUB_OUTPUT}"
-      - if: ${{ github.repository != 'kernel-patches/vmtest' }}
-        name: Pull recent KBUILD_OUTPUT contents
+      - name: Pull recent KBUILD_OUTPUT contents
         uses: actions/cache@v3
         with:
           path: ${{ env.KBUILD_OUTPUT }}
@@ -151,8 +149,7 @@ jobs:
           restore-keys: |
             kbuild-output-${{ runner.os }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.timestamp }}-
             kbuild-output-${{ runner.os }}-${{ matrix.toolchain }}-
-      - if: ${{ github.repository != 'kernel-patches/vmtest' }}
-        name: Prepare incremental build
+      - name: Prepare incremental build
         shell: bash
         run: |
           set -e -u
@@ -236,7 +233,7 @@ jobs:
             ${file_list} \
             --exclude '*.h' \
             selftests/bpf/ | zstd -T0 -19 -o vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
-      - if: ${{ github.repository != 'kernel-patches/vmtest' && github.event_name != 'push' }}
+      - if: ${{ github.event_name != 'push' }}
         name: Remove KBUILD_OUTPUT contents
         shell: bash
         run: |
