@@ -242,7 +242,7 @@ jobs:
         run: |
           # Remove $KBUILD_OUTPUT to prevent cache creation for pull requests.
           # Only on pushed changes are build artifacts actually cached, because
-          # of github.com/action/cache's cache isolation logic.
+          # of github.com/actions/cache's cache isolation logic.
           rm -rf "${KBUILD_OUTPUT}"
       - uses: actions/upload-artifact@v3
         with:
