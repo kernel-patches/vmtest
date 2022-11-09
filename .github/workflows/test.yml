@@ -259,8 +259,16 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
-      - if: ${{ github.event_name != 'push' }}
-        name: Tar artifacts
+      - name: Prepare rootfs
+        uses: libbpf/ci/prepare-rootfs@master
+        with:
+          project-name: 'libbpf'
+          arch: ${{ matrix.arch }}
+          kernel: ${{ matrix.kernel }}
+          kernel-root: '.'
+          kbuild-output: ${{ env.KBUILD_OUTPUT }}
+          image-output: 'root.img'
+      - name: Tar artifacts
         run: |
           # Remove intermediate object files that we have no use for. Ideally
           # we'd just exclude them from tar below, but it does not provide
@@ -285,17 +293,9 @@ jobs:
           fi
           # zstd is installed by default in the runner images.
           tar -cf - \
-            "${KBUILD_OUTPUT}"/.config \
-            "${KBUILD_OUTPUT}"/$(KBUILD_OUTPUT="${KBUILD_OUTPUT}" make -s image_name) \
-            "${KBUILD_OUTPUT}"/include/config/auto.conf \
-            "${KBUILD_OUTPUT}"/include/generated/autoconf.h \
-            "${KBUILD_OUTPUT}"/vmlinux \
             ${file_list} \
-            --exclude '*.cmd' \
-            --exclude '*.d' \
-            --exclude '*.h' \
-            --exclude '*.output' \
-            selftests/bpf/ | zstd -T0 -19 -o vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
+            root.img \
+            vmlinuz | zstd -T0 -19 -o vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
       - if: ${{ github.event_name != 'push' }}
         name: Remove KBUILD_OUTPUT contents
         shell: bash
@@ -333,23 +333,14 @@ jobs:
       - name: Untar artifacts
         # zstd is installed by default in the runner images.
         run: zstd -d -T0  vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst --stdout | tar -xf -
-      - name: Prepare rootfs
-        uses: libbpf/ci/prepare-rootfs@master
-        with:
-          project-name: 'libbpf'
-          arch: ${{ matrix.arch }}
-          kernel: ${{ matrix.kernel }}
-          kernel-root: '.'
-          kbuild-output: ${{ env.KBUILD_OUTPUT }}
-          image-output: '/tmp/root.img'
-          test: ${{ matrix.test }}
       - name: Run selftests
         uses: libbpf/ci/run-qemu@master
         continue-on-error: ${{ matrix.continue_on_error }}
         timeout-minutes: ${{ matrix.timeout_minutes }}
         with:
           arch: ${{ matrix.arch}}
-          img: '/tmp/root.img'
+          img: '${{ github.workspace }}/root.img'
           vmlinuz: '${{ github.workspace }}/vmlinuz'
           kernel-root: '.'
           max-cpu: 8
+          kernel-test: ${{ matrix.test }}
