@@ -8,7 +8,7 @@ on:
       - bpf-next_base
 
 concurrency:
-  group: ci-test-${{ github.head_ref }}
+  group: ci-test-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
