@@ -148,9 +148,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.KBUILD_OUTPUT }}
-          key: kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.timestamp }}-${{ github.sha }}
+          key: kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ github.ref_name}}-${{ steps.get-commit-metadata.outputs.timestamp }}-${{ github.sha }}
           restore-keys: |
-            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.timestamp }}-
+            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ github.ref_name}}-${{ steps.get-commit-metadata.outputs.timestamp }}-
+            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ github.ref_name}}-
             kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-
       - name: Prepare incremental build
         shell: bash
