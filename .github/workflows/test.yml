@@ -144,14 +144,19 @@ jobs:
         shell: bash
         run: |
           echo "timestamp=$(git show --format='%ct' --no-patch)" >> "${GITHUB_OUTPUT}"
+          if [ ${{ github.event_name }} = 'push' ]; then
+            echo "branch=${{ github.ref_name }}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "branch=${{ github.base_ref }}" >> "${GITHUB_OUTPUT}"
+          fi
       - name: Pull recent KBUILD_OUTPUT contents
         uses: actions/cache@v3
         with:
           path: ${{ env.KBUILD_OUTPUT }}
-          key: kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ github.ref_name}}-${{ steps.get-commit-metadata.outputs.timestamp }}-${{ github.sha }}
+          key: kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.branch }}-${{ steps.get-commit-metadata.outputs.timestamp }}-${{ github.sha }}
           restore-keys: |
-            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ github.ref_name}}-${{ steps.get-commit-metadata.outputs.timestamp }}-
-            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ github.ref_name}}-
+            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.branch }}-${{ steps.get-commit-metadata.outputs.timestamp }}-
+            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.branch }}-
             kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-
       - name: Prepare incremental build
         shell: bash
