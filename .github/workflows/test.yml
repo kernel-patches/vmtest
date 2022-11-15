@@ -230,19 +230,22 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
-      - name: Build selftests
+      - if: ${{ github.event_name != 'push' }}
+        name: Build selftests
         uses: libbpf/ci/build-selftests@master
         with:
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
-      - name: Build samples
+      - if: ${{ github.event_name != 'push' }}
+        name: Build samples
         uses: libbpf/ci/build-samples@master
         with:
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
-      - name: Tar artifacts
+      - if: ${{ github.event_name != 'push' }}
+        name: Tar artifacts
         run: |
           file_list=""
           if [ "${{ github.repository }}" == "kernel-patches/vmtest" ]; then
@@ -272,7 +275,8 @@ jobs:
           # Only on pushed changes are build artifacts actually cached, because
           # of github.com/actions/cache's cache isolation logic.
           rm -rf "${KBUILD_OUTPUT}"
-      - uses: actions/upload-artifact@v3
+      - if: ${{ github.event_name != 'push' }}
+        uses: actions/upload-artifact@v3
         with:
           name: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}
           if-no-files-found: error
