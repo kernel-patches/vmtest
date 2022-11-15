@@ -152,7 +152,7 @@ jobs:
             # For pull requests we just use the current HEAD.
             commit="$(git rev-parse ${{ github.sha }})"
           fi
-          echo "timestamp=$(git show --format='%ct' --no-patch ${commit})" >> "${GITHUB_OUTPUT}"
+          echo "timestamp=$(TZ=utc git show --format='%cd' --no-patch --date=iso-strict-local ${commit})" >> "${GITHUB_OUTPUT}"
           echo "commit=${commit}" >> "${GITHUB_OUTPUT}"
       - name: Pull recent KBUILD_OUTPUT contents
         uses: actions/cache@v3
