@@ -143,17 +143,22 @@ jobs:
         id: get-commit-metadata
         shell: bash
         run: |
-          echo "timestamp=$(git show --format='%ct' --no-patch)" >> "${GITHUB_OUTPUT}"
           if [ ${{ github.event_name }} = 'push' ]; then
             echo "branch=${{ github.ref_name }}" >> "${GITHUB_OUTPUT}"
+            # Ignore top most commit which just adds CI files.
+            commit="$(git rev-parse HEAD^)"
           else
             echo "branch=${{ github.base_ref }}" >> "${GITHUB_OUTPUT}"
+            # For pull requests we just use the current HEAD.
+            commit="$(git rev-parse ${{ github.sha }})"
           fi
+          echo "timestamp=$(git show --format='%ct' --no-patch ${commit})" >> "${GITHUB_OUTPUT}"
+          echo "commit=${commit}" >> "${GITHUB_OUTPUT}"
       - name: Pull recent KBUILD_OUTPUT contents
         uses: actions/cache@v3
         with:
           path: ${{ env.KBUILD_OUTPUT }}
-          key: kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.branch }}-${{ steps.get-commit-metadata.outputs.timestamp }}-${{ github.sha }}
+          key: kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.branch }}-${{ steps.get-commit-metadata.outputs.timestamp }}-${{ steps.get-commit-metadata.outputs.commit }}
           restore-keys: |
             kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.branch }}-${{ steps.get-commit-metadata.outputs.timestamp }}-
             kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain }}-${{ steps.get-commit-metadata.outputs.branch }}-
@@ -197,12 +202,10 @@ jobs:
 
           mkdir --parents "${KBUILD_OUTPUT}"
           current_time="$(date --iso-8601=ns)"
-          build_base_sha="${{ github.sha }}"
-          echo "Using build base SHA-1 ${build_base_sha}"
 
           if [ -f "${KBUILD_OUTPUT}/.build-base-sha" ]; then
             build_base_sha="$(cat "${KBUILD_OUTPUT}/.build-base-sha")"
-            echo "Setting up build state for ${build_base_sha}"
+            echo "Setting up base build state for ${build_base_sha}"
 
             (
               git checkout --quiet "${build_base_sha}" \
@@ -213,7 +216,7 @@ jobs:
             echo "No previous build data found"
           fi
 
-          echo -n "${build_base_sha}" > "${KBUILD_OUTPUT}/.build-base-sha"
+          echo -n "${{ steps.get-commit-metadata.outputs.commit }}" > "${KBUILD_OUTPUT}/.build-base-sha"
       - uses: libbpf/ci/patch-kernel@master
         with:
           patches-root: '${{ github.workspace }}/ci/diffs'
