@@ -144,16 +144,25 @@ jobs:
         shell: bash
         run: |
           if [ ${{ github.event_name }} = 'push' ]; then
-            echo "branch=${{ github.ref_name }}" >> "${GITHUB_OUTPUT}"
-            # Ignore top most commit which just adds CI files.
-            commit="$(git rev-parse HEAD^)"
+            branch="${{ github.ref_name }}"
+            echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
           else
-            echo "branch=${{ github.base_ref }}" >> "${GITHUB_OUTPUT}"
-            # For pull requests we just use the current HEAD.
-            commit="$(git rev-parse ${{ github.sha }})"
+            branch="${{ github.base_ref }}"
+            echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
           fi
+
+          upstream=$(echo "${branch}" | sed 's@_base$@@')
+          commit="$(
+            git rev-parse "origin/${upstream}" &> /dev/null \
+              || (
+                git fetch --quiet --prune --no-tags --depth=1 --no-recurse-submodules origin +refs/heads/${upstream}:refs/remotes/origin/${upstream} \
+                  && git rev-parse "origin/${upstream}"
+              )
+          )"
+
           echo "timestamp=$(TZ=utc git show --format='%cd' --no-patch --date=iso-strict-local ${commit})" >> "${GITHUB_OUTPUT}"
           echo "commit=${commit}" >> "${GITHUB_OUTPUT}"
+          echo "Most recent upstream commit is ${commit}"
       - name: Pull recent KBUILD_OUTPUT contents
         uses: actions/cache@v3
         with:
