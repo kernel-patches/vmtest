@@ -256,6 +256,12 @@ jobs:
       - if: ${{ github.event_name != 'push' }}
         name: Tar artifacts
         run: |
+          # Remove intermediate object files that we have no use for. Ideally
+          # we'd just exclude them from tar below, but it does not provide
+          # options to express the precise constraints.
+          find selftests/ -name "*.o" -a ! -name "*.bpf.o" -print0 | \
+            xargs --null --max-args=10000 rm
+
           file_list=""
           if [ "${{ github.repository }}" == "kernel-patches/vmtest" ]; then
             # Package up a bunch of additional infrastructure to support running
@@ -274,7 +280,10 @@ jobs:
             "${KBUILD_OUTPUT}"/include/generated/autoconf.h \
             "${KBUILD_OUTPUT}"/vmlinux \
             ${file_list} \
+            --exclude '*.cmd' \
+            --exclude '*.d' \
             --exclude '*.h' \
+            --exclude '*.output' \
             selftests/bpf/ | zstd -T0 -19 -o vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
       - if: ${{ github.event_name != 'push' }}
         name: Remove KBUILD_OUTPUT contents
