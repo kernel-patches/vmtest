@@ -262,6 +262,11 @@ jobs:
           find selftests/ -name "*.o" -a ! -name "*.bpf.o" -print0 | \
             xargs --null --max-args=10000 rm
 
+          # Strip debug information, which is excessively large (consuming
+          # bandwidth) while not actually being used (the kernel does not use
+          # DWARF to symbolize stacktraces).
+          strip --strip-debug "${KBUILD_OUTPUT}"/vmlinux
+
           file_list=""
           if [ "${{ github.repository }}" == "kernel-patches/vmtest" ]; then
             # Package up a bunch of additional infrastructure to support running
