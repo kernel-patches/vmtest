@@ -69,11 +69,11 @@ jobs:
             return config
 
           matrix = [
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.x86_64.value, "toolchain": "gcc"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.x86_64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.aarch64.value, "toolchain": "gcc"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.aarch64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.s390x.value, "toolchain": "gcc"},
+            {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.x86_64.value, "test_arch": Arch.x86_64.value, "arch": Arch.x86_64.value, "toolchain": "gcc"},
+            {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.x86_64.value, "test_arch": Arch.x86_64.value, "arch": Arch.x86_64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
+            {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.aarch64.value, "test_arch": Arch.aarch64.value, "arch": Arch.aarch64.value, "toolchain": "gcc"},
+            {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.aarch64.value, "test_arch": Arch.aarch64.value, "arch": Arch.aarch64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
+            {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.s390x.value, "test_arch": Arch.s390x.value, "arch": Arch.s390x.value, "toolchain": "gcc"},
           ]
           self_hosted_repos = [
             "kernel-patches/bpf",
@@ -84,14 +84,16 @@ jobs:
           if "${{ github.repository_owner }}" != "kernel-patches" or "${{ github.repository }}" not in self_hosted_repos:
             # Outside of those repositories, we only run on x86_64 GH hosted runners (ubuntu-latest)
             for idx in range(len(matrix) - 1, -1, -1):
-              if matrix[idx]["arch"] != Arch.x86_64.value:
+              if matrix[idx]["build_arch"] != Arch.x86_64.value or matrix[idx]["test_arch"] != Arch.x86_64.value:
                 del matrix[idx]
               else:
-                matrix[idx]["runs_on"] = ["ubuntu-latest"]
+                matrix[idx]["build_runs_on"] = "ubuntu-latest"
+                matrix[idx]["test_runs_on"] = "ubuntu-latest"
           else:
             # Otherwise, run on (self-hosted, arch) runners
             for idx in range(len(matrix) - 1, -1, -1):
-              matrix[idx]["runs_on"].extend(["self-hosted", matrix[idx]["arch"]])
+              matrix[idx]["build_runs_on"].extend(["self-hosted", matrix[idx]["build_arch"]])
+              matrix[idx]["test_runs_on"].extend(["self-hosted", matrix[idx]["test_arch"]])
 
           build_matrix = {"include": matrix}
           set_output("build_matrix", dumps(build_matrix))
@@ -109,9 +111,9 @@ jobs:
                                         for test in tests]}
           set_output("test_matrix", dumps(test_matrix))
   build:
-    name: build for ${{ matrix.arch }} with ${{ matrix.toolchain }}
+    name: build for ${{ matrix.arch }} with ${{ matrix.toolchain }} on ${{ matrix.runs_on }}
     needs: set-matrix
-    runs-on: ${{ matrix.runs_on }}
+    runs-on: ${{ matrix.build_runs_on }}
     timeout-minutes: 100
     strategy:
       fail-fast: false
@@ -232,6 +234,8 @@ jobs:
           repo-root: '${{ github.workspace }}'
       - name: Setup build environment
         uses: libbpf/ci/setup-build-env@master
+        with:
+          arch: ${{ matrix.arch }}
       - name: Build kernel image
         uses: libbpf/ci/build-linux@master
         with:
@@ -243,6 +247,7 @@ jobs:
         name: Build selftests
         uses: libbpf/ci/build-selftests@master
         with:
+          arch: ${{ matrix.arch }}
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
@@ -250,6 +255,7 @@ jobs:
         name: Build samples
         uses: libbpf/ci/build-samples@master
         with:
+          arch: ${{ matrix.arch }}
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
@@ -311,7 +317,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.set-matrix.outputs.test-matrix) }}
-    runs-on: ${{ matrix.runs_on }}
+    runs-on: ${{ matrix.test_runs_on }}
     timeout-minutes: 100
     env:
       KERNEL: ${{ matrix.kernel }}
