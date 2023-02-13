@@ -41,6 +41,7 @@ jobs:
             CPU architecture supported by CI.
             """
             aarch64 = "aarch64"
+            riscv64 = "riscv64"
             s390x = "s390x"
             x86_64 = "x86_64"
 
@@ -74,6 +75,8 @@ jobs:
             {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.aarch64.value, "test_arch": Arch.aarch64.value, "arch": Arch.aarch64.value, "toolchain": "gcc"},
             {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.aarch64.value, "test_arch": Arch.aarch64.value, "arch": Arch.aarch64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
             {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.s390x.value, "test_arch": Arch.s390x.value, "arch": Arch.s390x.value, "toolchain": "gcc"},
+            {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.x86_64.value, "test_arch": Arch.x86_64.value, "arch": Arch.riscv64.value, "toolchain": "gcc"},
+            {"kernel": "LATEST", "build_runs_on": [], "test_runs_on": [], "build_arch": Arch.x86_64.value, "test_arch": Arch.x86_64.value, "arch": Arch.riscv64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
           ]
           self_hosted_repos = [
             "kernel-patches/bpf",
