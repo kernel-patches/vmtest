@@ -261,41 +261,12 @@ jobs:
           max-make-jobs: 32
       - if: ${{ github.event_name != 'push' }}
         name: Tar artifacts
-        run: |
-          # Remove intermediate object files that we have no use for. Ideally
-          # we'd just exclude them from tar below, but it does not provide
-          # options to express the precise constraints.
-          find selftests/ -name "*.o" -a ! -name "*.bpf.o" -print0 | \
-            xargs --null --max-args=10000 rm
-
-          # Strip debug information, which is excessively large (consuming
-          # bandwidth) while not actually being used (the kernel does not use
-          # DWARF to symbolize stacktraces).
-          strip --strip-debug "${KBUILD_OUTPUT}"/vmlinux
-
-          file_list=""
-          if [ "${{ github.repository }}" == "kernel-patches/vmtest" ]; then
-            # Package up a bunch of additional infrastructure to support running
-            # 'make kernelrelease' and bpf tool checks later on.
-            file_list="$(find . -iname Makefile | xargs) \
-              scripts/ \
-              tools/testing/selftests/bpf/ \
-              tools/include/ \
-              tools/bpf/bpftool/";
-          fi
-          # zstd is installed by default in the runner images.
-          tar -cf - \
-            "${KBUILD_OUTPUT}"/.config \
-            "${KBUILD_OUTPUT}"/$(KBUILD_OUTPUT="${KBUILD_OUTPUT}" make -s image_name) \
-            "${KBUILD_OUTPUT}"/include/config/auto.conf \
-            "${KBUILD_OUTPUT}"/include/generated/autoconf.h \
-            "${KBUILD_OUTPUT}"/vmlinux \
-            ${file_list} \
-            --exclude '*.cmd' \
-            --exclude '*.d' \
-            --exclude '*.h' \
-            --exclude '*.output' \
-            selftests/bpf/ | zstd -T0 -19 -o vmlinux-${{ matrix.arch }}-${{ matrix.toolchain }}.tar.zst
+        uses: libbpf/ci/tar-artifacts@master
+        with:
+          arch: ${{ matrix.arch }}
+          toolchain: ${{ matrix.toolchain }}
+          kbuild-output: ${{ env.KBUILD_OUTPUT }}
+          github-repo: ${{ github.repository }}
       - if: ${{ github.event_name != 'push' }}
         name: Remove KBUILD_OUTPUT contents
         shell: bash
