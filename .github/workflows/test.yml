@@ -18,7 +18,7 @@ jobs:
       llvm: ${{ steps.llvm-toolchain-impl.outputs.version }}
     steps:
       - id: llvm-version
-        uses: libbpf/ci/get-llvm-version@master
+        uses: yonghong-song/ci/get-llvm-version@master
       - id: llvm-toolchain-impl
         shell: bash
         run: echo "version=llvm-${{ steps.llvm-version.outputs.version }}" >> $GITHUB_OUTPUT
