@@ -18,7 +18,7 @@ jobs:
       llvm: ${{ steps.llvm-toolchain-impl.outputs.version }}
     steps:
       - id: llvm-version
-        uses: libbpf/ci/get-llvm-version@master
+        uses: yonghong-song/ci/get-llvm-version@master
       - id: llvm-toolchain-impl
         shell: bash
         run: echo "version=llvm-${{ steps.llvm-version.outputs.version }}" >> $GITHUB_OUTPUT
@@ -231,7 +231,7 @@ jobs:
           patches-root: '${{ github.workspace }}/ci/diffs'
           repo-root: '${{ github.workspace }}'
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@master
+        uses: yonghong-song/ci/setup-build-env@master
       - name: Build kernel image
         uses: libbpf/ci/build-linux@master
         with:
@@ -241,14 +241,14 @@ jobs:
           max-make-jobs: 32
       - if: ${{ github.event_name != 'push' }}
         name: Build selftests
-        uses: libbpf/ci/build-selftests@master
+        uses: yonghong-song/ci/build-selftests@master
         with:
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
       - if: ${{ github.event_name != 'push' }}
         name: Build samples
-        uses: libbpf/ci/build-samples@master
+        uses: yonghong-song/ci/build-samples@master
         with:
           toolchain: ${{ matrix.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
