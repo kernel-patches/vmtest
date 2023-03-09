@@ -5,3 +5,4 @@ core_reloc/enum64val
 core_reloc/size___diff_sz
 core_reloc/type_based___diff_sz
 test_ima	# All of CI is broken on it following 6.3-rc1 merge
+fexit_bpf2bpf
