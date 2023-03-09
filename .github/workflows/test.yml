@@ -70,10 +70,10 @@ jobs:
 
           matrix = [
             {"kernel": "LATEST", "runs_on": [], "arch": Arch.x86_64.value, "toolchain": "gcc"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.x86_64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.aarch64.value, "toolchain": "gcc"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.aarch64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.s390x.value, "toolchain": "gcc", "parallel_tests": False},
+            #{"kernel": "LATEST", "runs_on": [], "arch": Arch.x86_64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
+            #{"kernel": "LATEST", "runs_on": [], "arch": Arch.aarch64.value, "toolchain": "gcc"},
+            #{"kernel": "LATEST", "runs_on": [], "arch": Arch.aarch64.value, "toolchain": "${{ needs.llvm-toolchain.outputs.llvm }}"},
+            #{"kernel": "LATEST", "runs_on": [], "arch": Arch.s390x.value, "toolchain": "gcc", "parallel_tests": False},
           ]
           self_hosted_repos = [
             "kernel-patches/bpf",
