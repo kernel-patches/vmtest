@@ -52,11 +52,18 @@ test_progs_helper() {
   local selftest="test_progs${1}"
   local args="$2"
 
+  json_file=${selftest/-/_}
+  if [ "$2" == "-j" ]
+  then
+    json_file+="_parallel"
+  fi
+  json_file="/${json_file}.json"
+
   foldable start ${selftest} "Testing ${selftest}"
   # "&& true" does not change the return code (it is not executed
   # if the Python script fails), but it prevents exiting on a
   # failure due to the "set -e".
-  ./${selftest} ${args} ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} && true
+  ./${selftest} ${args} ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} --json-summary "${json_file}" && true
   echo "${selftest}:$?" >>"${STATUS_FILE}"
   foldable end ${selftest}
 }
