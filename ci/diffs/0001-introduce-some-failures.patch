@@ -1,0 +1,66 @@
+From f885f5d6314e4a22421ce7b308aa7abd29db92cb Mon Sep 17 00:00:00 2001
+From: Manu Bretelle <chantr4@gmail.com>
+Date: Wed, 15 Mar 2023 18:32:52 -0700
+Subject: [PATCH] introduce some failures
+
+---
+ tools/testing/selftests/bpf/prog_tests/linked_list.c | 6 +++---
+ tools/testing/selftests/bpf/prog_tests/probe_user.c  | 2 +-
+ tools/testing/selftests/bpf/prog_tests/tcp_rtt.c     | 2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/tools/testing/selftests/bpf/prog_tests/linked_list.c b/tools/testing/selftests/bpf/prog_tests/linked_list.c
+index 0ed8132ce1c3..13e4f54f1620 100644
+--- a/tools/testing/selftests/bpf/prog_tests/linked_list.c
++++ b/tools/testing/selftests/bpf/prog_tests/linked_list.c
+@@ -58,18 +58,18 @@ static struct {
+ 	TEST(inner_map, pop_front)
+ 	TEST(inner_map, pop_back)
+ #undef TEST
+-	{ "map_compat_kprobe", "tracing progs cannot use bpf_{list_head,rb_root} yet" },
++	{ "map_compat_kprobe", "abcdtracing progs cannot use bpf_{list_head,rb_root} yet" },
+ 	{ "map_compat_kretprobe", "tracing progs cannot use bpf_{list_head,rb_root} yet" },
+ 	{ "map_compat_tp", "tracing progs cannot use bpf_{list_head,rb_root} yet" },
+ 	{ "map_compat_perf", "tracing progs cannot use bpf_{list_head,rb_root} yet" },
+ 	{ "map_compat_raw_tp", "tracing progs cannot use bpf_{list_head,rb_root} yet" },
+ 	{ "map_compat_raw_tp_w", "tracing progs cannot use bpf_{list_head,rb_root} yet" },
+ 	{ "obj_type_id_oor", "local type ID argument must be in range [0, U32_MAX]" },
+-	{ "obj_new_no_composite", "bpf_obj_new type ID argument must be of a struct" },
++	{ "obj_new_no_composite", "efbgbpf_obj_new type ID argument must be of a struct" },
+ 	{ "obj_new_no_struct", "bpf_obj_new type ID argument must be of a struct" },
+ 	{ "obj_drop_non_zero_off", "R1 must have zero offset when passed to release func" },
+ 	{ "new_null_ret", "R0 invalid mem access 'ptr_or_null_'" },
+-	{ "obj_new_acq", "Unreleased reference id=" },
++	{ "obj_new_acq", "ijklUnreleased reference id=" },
+ 	{ "use_after_drop", "invalid mem access 'scalar'" },
+ 	{ "ptr_walk_scalar", "type=scalar expected=percpu_ptr_" },
+ 	{ "direct_read_lock", "direct access to bpf_spin_lock is disallowed" },
+diff --git a/tools/testing/selftests/bpf/prog_tests/probe_user.c b/tools/testing/selftests/bpf/prog_tests/probe_user.c
+index 8721671321de..f2903f9af854 100644
+--- a/tools/testing/selftests/bpf/prog_tests/probe_user.c
++++ b/tools/testing/selftests/bpf/prog_tests/probe_user.c
+@@ -76,7 +76,7 @@ void serial_test_probe_user(void)
+ 	memset(&tmp, 0xab, sizeof(tmp));
+ 
+ 	in = (struct sockaddr_in *)&curr;
+-	if (CHECK(memcmp(&curr, &tmp, sizeof(tmp)), "check_kprobe_res",
++	if (CHECK(memcmp(&curr, &tmp, sizeof(tmp)), "abcdcheck_kprobe_res",
+ 		  "wrong kprobe res from probe write: %s:%u\n",
+ 		  inet_ntoa(in->sin_addr), ntohs(in->sin_port)))
+ 		goto cleanup;
+diff --git a/tools/testing/selftests/bpf/prog_tests/tcp_rtt.c b/tools/testing/selftests/bpf/prog_tests/tcp_rtt.c
+index 8fe84da1b9b4..bc047327ba86 100644
+--- a/tools/testing/selftests/bpf/prog_tests/tcp_rtt.c
++++ b/tools/testing/selftests/bpf/prog_tests/tcp_rtt.c
+@@ -16,7 +16,7 @@ static void send_byte(int fd)
+ {
+ 	char b = 0x55;
+ 
+-	ASSERT_EQ(write(fd, &b, sizeof(b)), 1, "send single byte");
++	ASSERT_EQ(write(fd, &b, sizeof(b)), 2, "send single byte");
+ }
+ 
+ static int wait_for_ack(int fd, int retries)
+-- 
+2.34.1
+
