@@ -352,3 +352,4 @@ jobs:
           vmlinuz: '${{ github.workspace }}/vmlinuz'
           kernel-root: '.'
           max-cpu: 8
+          kernel-test: ${{ matrix.test }}
