@@ -17,6 +17,50 @@ class Arch(Enum):
     x86_64 = "x86_64"
 
 
+SELF_HOSTED_REPOS = [
+    "kernel-patches/bpf",
+    "kernel-patches/vmtest",
+]
+
+MATRIX = [
+    {
+        "kernel": "LATEST",
+        "runs_on": [],
+        "arch": Arch.x86_64.value,
+        "toolchain": "gcc",
+        "llvm-version": "16",
+    },
+    {
+        "kernel": "LATEST",
+        "runs_on": [],
+        "arch": Arch.x86_64.value,
+        "toolchain": "llvm",
+        "llvm-version": "16",
+    },
+    {
+        "kernel": "LATEST",
+        "runs_on": [],
+        "arch": Arch.aarch64.value,
+        "toolchain": "gcc",
+        "llvm-version": "16",
+    },
+    {
+        "kernel": "LATEST",
+        "runs_on": [],
+        "arch": Arch.aarch64.value,
+        "toolchain": "llvm",
+        "llvm-version": "16",
+    },
+    {
+        "kernel": "LATEST",
+        "runs_on": [],
+        "arch": Arch.s390x.value,
+        "toolchain": "gcc",
+        "llvm-version": "16",
+        "parallel_tests": False,
+    },
+]
+
 def set_output(name, value):
     """Write an output variable to the GitHub output file."""
     with open(os.getenv("GITHUB_OUTPUT"), "a") as f:
@@ -53,68 +97,25 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    matrix = [
-        {
-            "kernel": "LATEST",
-            "runs_on": [],
-            "arch": Arch.x86_64.value,
-            "toolchain": "gcc",
-            "llvm-version": "16",
-        },
-        {
-            "kernel": "LATEST",
-            "runs_on": [],
-            "arch": Arch.x86_64.value,
-            "toolchain": "llvm",
-            "llvm-version": "16",
-        },
-        {
-            "kernel": "LATEST",
-            "runs_on": [],
-            "arch": Arch.aarch64.value,
-            "toolchain": "gcc",
-            "llvm-version": "16",
-        },
-        {
-            "kernel": "LATEST",
-            "runs_on": [],
-            "arch": Arch.aarch64.value,
-            "toolchain": "llvm",
-            "llvm-version": "16",
-        },
-        {
-            "kernel": "LATEST",
-            "runs_on": [],
-            "arch": Arch.s390x.value,
-            "toolchain": "gcc",
-            "llvm-version": "16",
-            "parallel_tests": False,
-        },
-    ]
-    self_hosted_repos = [
-        "kernel-patches/bpf",
-        "kernel-patches/vmtest",
-    ]
-
-    for idx in range(len(matrix) - 1, -1, -1):
-        if matrix[idx]["toolchain"] == "gcc":
-            matrix[idx]["toolchain_full"] = "gcc"
+    for idx in range(len(MATRIX) - 1, -1, -1):
+        if MATRIX[idx]["toolchain"] == "gcc":
+            MATRIX[idx]["toolchain_full"] = "gcc"
         else:
-            matrix[idx]["toolchain_full"] = "llvm-" + matrix[idx]["llvm-version"]
+            MATRIX[idx]["toolchain_full"] = "llvm-" + MATRIX[idx]["llvm-version"]
     # Only a few repository within "kernel-patches" use self-hosted runners.
-    if args.owner != "kernel-patches" or args.repository not in self_hosted_repos:
+    if args.owner != "kernel-patches" or args.repository not in SELF_HOSTED_REPOS:
         # Outside of those repositories, we only run on x86_64 GH hosted runners (ubuntu-latest)
-        for idx in range(len(matrix) - 1, -1, -1):
-            if matrix[idx]["arch"] != Arch.x86_64.value:
-                del matrix[idx]
+        for idx in range(len(MATRIX) - 1, -1, -1):
+            if MATRIX[idx]["arch"] != Arch.x86_64.value:
+                del MATRIX[idx]
             else:
-                matrix[idx]["runs_on"] = ["ubuntu-latest"]
+                MATRIX[idx]["runs_on"] = ["ubuntu-latest"]
     else:
         # Otherwise, run on (self-hosted, arch) runners
-        for idx in range(len(matrix) - 1, -1, -1):
-            matrix[idx]["runs_on"].extend(["self-hosted", matrix[idx]["arch"]])
+        for idx in range(len(MATRIX) - 1, -1, -1):
+            MATRIX[idx]["runs_on"].extend(["self-hosted", MATRIX[idx]["arch"]])
 
-    build_matrix = {"include": matrix}
+    build_matrix = {"include": MATRIX}
     set_output("build_matrix", dumps(build_matrix))
 
     def get_tests(config):
@@ -133,7 +134,7 @@ if __name__ == "__main__":
     test_matrix = {
         "include": [
             {**config, **generate_test_config(test)}
-            for config in matrix
+            for config in MATRIX
             for test in get_tests(config)
         ]
     }
