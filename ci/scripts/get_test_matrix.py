@@ -61,10 +61,21 @@ MATRIX = [
     },
 ]
 
+
 def set_output(name, value):
     """Write an output variable to the GitHub output file."""
     with open(os.getenv("GITHUB_OUTPUT"), "a") as f:
         f.write(f"{name}={value}\n")
+
+
+def generate_toolchain_full(compiler, llvm_version):
+    """
+    When the compiler used is llvm, we need to specify which version to use
+    and align it with the version used to compile bpf selftests.
+    """
+    if compiler == "llvm":
+        return f"llvm-{llvm_version}"
+    return compiler
 
 
 def generate_test_config(test):
@@ -97,11 +108,10 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    for idx in range(len(MATRIX) - 1, -1, -1):
-        if MATRIX[idx]["toolchain"] == "gcc":
-            MATRIX[idx]["toolchain_full"] = "gcc"
-        else:
-            MATRIX[idx]["toolchain_full"] = "llvm-" + MATRIX[idx]["llvm-version"]
+    for idx, item in enumerate(MATRIX):
+        MATRIX[idx]["toolchain_full"] = generate_toolchain_full(
+            item["toolchain"], item["llvm-version"]
+        )
     # Only a few repository within "kernel-patches" use self-hosted runners.
     if args.owner != "kernel-patches" or args.repository not in SELF_HOSTED_REPOS:
         # Outside of those repositories, we only run on x86_64 GH hosted runners (ubuntu-latest)
