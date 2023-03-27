@@ -137,6 +137,14 @@ def run_on_github_runners(matrix) -> List:
     ]
 
 
+def run_on_self_hosted(matrix) -> List:
+    result = []
+    for item in matrix:
+        item["runs_on"].extend(["self-hosted", item["arch"]])
+        result.append(item)
+    return result
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--owner", required=True, help="Github owner")
@@ -155,8 +163,7 @@ if __name__ == "__main__":
 
     else:
         # Otherwise, run on (self-hosted, arch) runners
-        for idx in range(len(matrix) - 1, -1, -1):
-            matrix[idx]["runs_on"].extend(["self-hosted", matrix[idx]["arch"]])
+        matrix = run_on_self_hosted(matrix)
 
     build_matrix = {"include": matrix}
     set_output("build_matrix", dumps(build_matrix))
