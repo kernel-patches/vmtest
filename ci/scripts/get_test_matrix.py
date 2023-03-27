@@ -5,6 +5,7 @@ import argparse
 
 from enum import Enum
 from json import dumps
+from typing import List
 
 
 class Arch(Enum):
@@ -116,6 +117,18 @@ def get_tests(config):
     return [test for test in TESTS if not test.endswith("parallel")]
 
 
+def generate_toochain_full(matrix) -> List:
+    return [
+        item
+        | {
+            "toolchain_full": generate_toolchain_full(
+                item["toolchain"], item["llvm-version"]
+            )
+        }
+        for item in matrix
+    ]
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--owner", required=True, help="Github owner")
@@ -126,30 +139,27 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    for idx, item in enumerate(MATRIX):
-        MATRIX[idx]["toolchain_full"] = generate_toolchain_full(
-            item["toolchain"], item["llvm-version"]
-        )
+    matrix = generate_toochain_full(MATRIX)
     # Only a few repository within "kernel-patches" use self-hosted runners.
     if args.owner != "kernel-patches" or args.repository not in SELF_HOSTED_REPOS:
         # Outside of those repositories, we only run on x86_64 GH hosted runners (ubuntu-latest)
-        for idx in range(len(MATRIX) - 1, -1, -1):
-            if MATRIX[idx]["arch"] != Arch.x86_64.value:
-                del MATRIX[idx]
+        for idx in range(len(matrix) - 1, -1, -1):
+            if matrix[idx]["arch"] != Arch.x86_64.value:
+                del matrix[idx]
             else:
-                MATRIX[idx]["runs_on"] = ["ubuntu-latest"]
+                matrix[idx]["runs_on"] = ["ubuntu-latest"]
     else:
         # Otherwise, run on (self-hosted, arch) runners
-        for idx in range(len(MATRIX) - 1, -1, -1):
-            MATRIX[idx]["runs_on"].extend(["self-hosted", MATRIX[idx]["arch"]])
+        for idx in range(len(matrix) - 1, -1, -1):
+            matrix[idx]["runs_on"].extend(["self-hosted", matrix[idx]["arch"]])
 
-    build_matrix = {"include": MATRIX}
+    build_matrix = {"include": matrix}
     set_output("build_matrix", dumps(build_matrix))
 
     test_matrix = {
         "include": [
             {**config, **generate_test_config(test)}
-            for config in MATRIX
+            for config in matrix
             for test in get_tests(config)
         ]
     }
