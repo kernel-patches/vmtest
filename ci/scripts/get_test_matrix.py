@@ -129,6 +129,14 @@ def generate_toochain_full(matrix) -> List:
     ]
 
 
+def run_on_github_runners(matrix) -> List:
+    return [
+        item | {"runs_on": ["ubuntu-latest"]}
+        for item in matrix
+        if item["arch"] == Arch.x86_64.value
+    ]
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--owner", required=True, help="Github owner")
@@ -143,11 +151,8 @@ if __name__ == "__main__":
     # Only a few repository within "kernel-patches" use self-hosted runners.
     if args.owner != "kernel-patches" or args.repository not in SELF_HOSTED_REPOS:
         # Outside of those repositories, we only run on x86_64 GH hosted runners (ubuntu-latest)
-        for idx in range(len(matrix) - 1, -1, -1):
-            if matrix[idx]["arch"] != Arch.x86_64.value:
-                del matrix[idx]
-            else:
-                matrix[idx]["runs_on"] = ["ubuntu-latest"]
+        matrix = run_on_github_runners(matrix)
+
     else:
         # Otherwise, run on (self-hosted, arch) runners
         for idx in range(len(matrix) - 1, -1, -1):
