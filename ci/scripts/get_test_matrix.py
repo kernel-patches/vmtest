@@ -61,6 +61,15 @@ MATRIX = [
     },
 ]
 
+TESTS = [
+    "test_progs",
+    "test_progs_parallel",
+    "test_progs_no_alu32",
+    "test_progs_no_alu32_parallel",
+    "test_maps",
+    "test_verifier",
+]
+
 
 def set_output(name, value):
     """Write an output variable to the GitHub output file."""
@@ -98,6 +107,15 @@ def generate_test_config(test):
     return config
 
 
+def get_tests(config):
+    """
+    Filters out parallel tests when parallel tests are disabled.
+    """
+    if config.get("parallel_tests", True):
+        return TESTS
+    return [test for test in TESTS if not test.endswith("parallel")]
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--owner", required=True, help="Github owner")
@@ -127,19 +145,6 @@ if __name__ == "__main__":
 
     build_matrix = {"include": MATRIX}
     set_output("build_matrix", dumps(build_matrix))
-
-    def get_tests(config):
-        tests = [
-            "test_progs",
-            "test_progs_parallel",
-            "test_progs_no_alu32",
-            "test_progs_no_alu32_parallel",
-            "test_maps",
-            "test_verifier",
-        ]
-        if config.get("parallel_tests", True):
-            return tests
-        return [test for test in tests if not test.endswith("parallel")]
 
     test_matrix = {
         "include": [
