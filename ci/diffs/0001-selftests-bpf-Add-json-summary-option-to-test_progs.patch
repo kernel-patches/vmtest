@@ -119,7 +119,7 @@ Link: https://lore.kernel.org/bpf/20230317163256.3809328-1-chantr4@gmail.com
  create mode 120000 tools/testing/selftests/bpf/json_writer.h
 
 diff --git a/tools/testing/selftests/bpf/Makefile b/tools/testing/selftests/bpf/Makefile
-index 55811c448eb7..fc092582d16d 100644
+index b677dcd0b77a..59173eb636f5 100644
 --- a/tools/testing/selftests/bpf/Makefile
 +++ b/tools/testing/selftests/bpf/Makefile
 @@ -234,6 +234,7 @@ $(TEST_GEN_PROGS) $(TEST_GEN_PROGS_EXTENDED): $(BPFOBJ)
@@ -130,12 +130,12 @@ index 55811c448eb7..fc092582d16d 100644
  CAP_HELPERS	:= $(OUTPUT)/cap_helpers.o
  
  $(OUTPUT)/test_dev_cgroup: $(CGROUP_HELPERS) $(TESTING_HELPERS)
-@@ -559,7 +560,8 @@ TRUNNER_BPF_PROGS_DIR := progs
+@@ -558,7 +559,8 @@ TRUNNER_BPF_PROGS_DIR := progs
  TRUNNER_EXTRA_SOURCES := test_progs.c cgroup_helpers.c trace_helpers.c	\
  			 network_helpers.c testing_helpers.c		\
  			 btf_helpers.c flow_dissector_load.h		\
--			 cap_helpers.c test_loader.c xsk.c disasm.c
-+			 cap_helpers.c test_loader.c xsk.c disasm.c \
+-			 cap_helpers.c test_loader.c xsk.c
++			 cap_helpers.c test_loader.c xsk.c			\
 +			 json_writer.c
  TRUNNER_EXTRA_FILES := $(OUTPUT)/urandom_read $(OUTPUT)/bpf_testmod.ko	\
  		       $(OUTPUT)/liburandom_read.so			\
