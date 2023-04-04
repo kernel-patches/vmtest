@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Example run:
+# GITHUB_OUTPUT=/dev/stdout python3 -I ci/scripts/get_test_matrix.py -o kernel-patches -r kernel-patches/bpf-rc
 
 import os
 import argparse
