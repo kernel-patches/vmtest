@@ -20,3 +20,19 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         env:
           SHELLCHECK_OPTS: --severity=warning --exclude=SC1091
+
+
+  python_tests:
+    if: ${{ github.repository == 'kernel-patches/vmtest' }}
+    name: Lint and Test python scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      # Run black on python scripts
+      - uses: psf/black@stable
+        with:
+          src: "./ci/scripts"
+      - name: Run unittests
+        run: python3 -m unittest scripts/tests/test_matrix.py
+        working-directory: ci
