@@ -7,6 +7,10 @@ on:
       - bpf_base
       - bpf-next_base
 
+env:
+  veristat_arch: x86_64
+  veristat_toolchain: gcc
+
 concurrency:
   group: ci-test-${{ github.ref_name }}
   cancel-in-progress: true
@@ -17,6 +21,7 @@ jobs:
     outputs:
       build-matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
       test-matrix: ${{ steps.set-matrix-impl.outputs.test_matrix }}
+      veristat-runs-on: ${{ steps.set-matrix-impl.outputs.veristat_runs_on }}
     steps:
       - id: set-matrix-impl
         shell: python3 -I {0}
@@ -108,6 +113,12 @@ jobs:
                                       for test in get_tests(config)
                                     ]}
           set_output("test_matrix", dumps(test_matrix))
+
+          veristat_runs_on = next(x['runs_on']
+                                  for x in matrix
+                                  if x['arch'] == "${{env.veristat_arch}}" and
+                                     x['toolchain'] == "${{env.veristat_toolchain}}")
+          set_output("veristat_runs_on", veristat_runs_on)
   build:
     name: build for ${{ matrix.arch }} with ${{ matrix.toolchain_full }}
     needs: set-matrix
@@ -242,8 +253,7 @@ jobs:
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
           llvm-version: ${{ matrix.llvm-version }}
-      - if: ${{ github.event_name != 'push' }}
-        name: Build selftests
+      - name: Build selftests
         uses: libbpf/ci/build-selftests@main
         with:
           toolchain: ${{ matrix.toolchain }}
@@ -258,8 +268,7 @@ jobs:
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
           llvm-version: ${{ matrix.llvm-version }}
-      - if: ${{ github.event_name != 'push' }}
-        name: Tar artifacts
+      - name: Tar artifacts
         run: |
           # Remove intermediate object files that we have no use for. Ideally
           # we'd just exclude them from tar below, but it does not provide
@@ -303,8 +312,7 @@ jobs:
           # Only on pushed changes are build artifacts actually cached, because
           # of github.com/actions/cache's cache isolation logic.
           rm -rf "${KBUILD_OUTPUT}"
-      - if: ${{ github.event_name != 'push' }}
-        uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3
         with:
           name: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain_full }}
           if-no-files-found: error
@@ -353,3 +361,89 @@ jobs:
           kernel-root: '.'
           max-cpu: 8
           kernel-test: ${{ matrix.test }}
+  veristat:
+    name: veristat
+    needs: [set-matrix, build]
+    runs-on: ${{ fromJSON(needs.set-matrix.outputs.veristat-runs-on) }}
+    timeout-minutes: 100
+    env:
+      KERNEL: LATEST
+      REPO_ROOT: ${{ github.workspace }}
+      REPO_PATH: ""
+      KBUILD_OUTPUT: kbuild-output/
+    steps:
+      - name: Setup environment variables
+        run: |
+            echo arch_and_tool=${{ env.veristat_arch }}-${{ env.veristat_toolchain }} > \
+              ${GITHUB_ENV}
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: vmlinux-${{ env.arch_and_tool }}
+          path: .
+      - name: Untar artifacts
+        # zstd is installed by default in the runner images.
+        run: zstd -d -T0  vmlinux-${{ env.arch_and_tool }}.tar.zst --stdout | tar -xf -
+
+      - name: Prepare rootfs
+        uses: libbpf/ci/prepare-rootfs@main
+        with:
+          project-name: 'libbpf'
+          arch: x86_64
+          kernel: LATEST
+          kernel-root: '.'
+          kbuild-output: ${{ env.KBUILD_OUTPUT }}
+          image-output: '/tmp/root.img'
+          test: run_veristat
+
+      - name: Run veristat
+        uses: libbpf/ci/run-qemu@main
+        timeout-minutes: 10
+        with:
+          arch: x86_64
+          img: '/tmp/root.img'
+          vmlinuz: '${{ github.workspace }}/vmlinuz'
+          kernel-root: '.'
+          max-cpu: 8
+          kernel-test: run_veristat
+          output-dir: '${{ github.workspace }}'
+
+      # veristat.csv is produced by run-qemu run_veristat action
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.arch_and_tool }}-veristat-log
+          if-no-files-found: error
+          path: '${{ github.workspace }}/veristat.csv'
+
+      # For pull request:
+      # - get baseline log from cache
+      # - compare it to current run
+      - if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/cache/restore@v3
+        with:
+          key: ${{ env.arch_and_tool }}-veristat-baseline
+          restore-keys: |
+            ${{ env.arch_and_tool }}-veristat-baseline-
+          path: '${{ github.workspace }}/veristat-baseline.csv'
+
+      - if: ${{ github.event_name == 'pull_request' }}
+        name: Show veristat comparison
+        run: |
+          cd ${{ github.workspace }}
+          selftests/bpf/veristat \
+            --output-format csv \
+            --emit file,prog,verdict,states \
+            --compare veristat-baseline.csv veristat.csv > compare.csv
+          python3 ./.github/scripts/veristat-compare.py compare.csv
+
+      # For push: just put baseline log to cache
+      - if: ${{ github.event_name == 'push' }}
+        run: |
+          mv '${{ github.workspace }}/veristat.csv' \
+             '${{ github.workspace }}/veristat-baseline.csv'
+
+      - if: ${{ github.event_name == 'push' }}
+        uses: actions/cache/save@v3
+        with:
+          key: ${{ env.arch_and_tool }}-veristat-baseline-${{ github.run_id }}
+          path: '${{ github.workspace }}/veristat-baseline.csv'
