@@ -120,23 +120,29 @@ def get_tests(config):
 
 
 def generate_toochain_full(matrix) -> List:
-    return [
-        item
-        | {
-            "toolchain_full": generate_toolchain_full(
-                item["toolchain"], item["llvm-version"]
-            )
-        }
-        for item in matrix
-    ]
+    res = []
+    for item in matrix:
+        item.update(
+            {
+                "toolchain_full": generate_toolchain_full(
+                    item["toolchain"], item["llvm-version"]
+                )
+            }
+        )
+        res.append(item)
+
+    return res
 
 
 def run_on_github_runners(matrix) -> List:
-    return [
-        item | {"runs_on": ["ubuntu-latest"]}
-        for item in matrix
-        if item["arch"] == Arch.x86_64.value
-    ]
+    res = []
+    for item in matrix:
+        if item["arch"] != Arch.x86_64.value:
+            continue
+        item.update({"runs_on": ["ubuntu-latest"]})
+        res.append(item)
+
+    return res
 
 
 def run_on_self_hosted(matrix) -> List:
