@@ -23,7 +23,7 @@ jobs:
     # repo for instance.
     # This could be somehow fixed long term by making this action/workflow re-usable and letting the called
     # specify what to run on.
-    runs-on: ${{ github.repository_owner == 'kernel-patches' && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ github.repository_owner == 'kernel-patches' && 'x86_64' || 'ubuntu-latest' }}
     outputs:
       build-matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
       test-matrix: ${{ steps.set-matrix-impl.outputs.test_matrix }}
