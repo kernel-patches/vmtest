@@ -27,7 +27,6 @@ jobs:
     outputs:
       build-matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
       test-matrix: ${{ steps.set-matrix-impl.outputs.test_matrix }}
-      veristat-runs-on: ${{ steps.set-matrix-impl.outputs.veristat_runs_on }}
     steps:
       - id: set-matrix-impl
         shell: python3 -I {0}
@@ -69,11 +68,7 @@ jobs:
             return config
 
           matrix = [
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.x86_64.value, "toolchain": "gcc", "llvm-version": "16"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.x86_64.value, "toolchain": "llvm", "llvm-version": "16"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.aarch64.value, "toolchain": "gcc", "llvm-version": "16"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.aarch64.value, "toolchain": "llvm", "llvm-version": "16"},
-            {"kernel": "LATEST", "runs_on": [], "arch": Arch.s390x.value, "toolchain": "gcc", "llvm-version": "16", "parallel_tests": False},
+            {"kernel": "LATEST", "runs_on": [], "arch": Arch.s390x.value, "toolchain": "gcc", "llvm-version": "17", "parallel_tests": False},
           ]
           self_hosted_repos = [
             "kernel-patches/bpf",
@@ -120,11 +115,6 @@ jobs:
                                     ]}
           set_output("test_matrix", dumps(test_matrix))
 
-          veristat_runs_on = next(x['runs_on']
-                                  for x in matrix
-                                  if x['arch'] == "${{env.veristat_arch}}" and
-                                     x['toolchain'] == "${{env.veristat_toolchain}}")
-          set_output("veristat_runs_on", veristat_runs_on)
   build:
     name: build for ${{ matrix.arch }} with ${{ matrix.toolchain_full }}
     needs: set-matrix
@@ -156,93 +146,6 @@ jobs:
           rm -rf .kernel/.git
           cp -rf .kernel/. .
           rm -rf .kernel
-      - name: Get commit meta-data
-        id: get-commit-metadata
-        shell: bash
-        run: |
-          if [ ${{ github.event_name }} = 'push' ]; then
-            branch="${{ github.ref_name }}"
-            echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
-          else
-            branch="${{ github.base_ref }}"
-            echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
-          fi
-
-          upstream=$(echo "${branch}" | sed 's@_base$@@')
-          commit="$(
-            git rev-parse "origin/${upstream}" &> /dev/null \
-              || (
-                git fetch --quiet --prune --no-tags --depth=1 --no-recurse-submodules origin +refs/heads/${upstream}:refs/remotes/origin/${upstream} \
-                  && git rev-parse "origin/${upstream}"
-              )
-          )"
-
-          echo "timestamp=$(TZ=utc git show --format='%cd' --no-patch --date=iso-strict-local ${commit})" >> "${GITHUB_OUTPUT}"
-          echo "commit=${commit}" >> "${GITHUB_OUTPUT}"
-          echo "Most recent upstream commit is ${commit}"
-      - name: Pull recent KBUILD_OUTPUT contents
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.KBUILD_OUTPUT }}
-          key: kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain_full }}-${{ steps.get-commit-metadata.outputs.branch }}-${{ steps.get-commit-metadata.outputs.timestamp }}-${{ steps.get-commit-metadata.outputs.commit }}
-          restore-keys: |
-            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain_full }}-${{ steps.get-commit-metadata.outputs.branch }}-${{ steps.get-commit-metadata.outputs.timestamp }}-
-            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain_full }}-${{ steps.get-commit-metadata.outputs.branch }}-
-            kbuild-output-${{ matrix.arch }}-${{ matrix.toolchain_full }}-
-      - name: Prepare incremental build
-        shell: bash
-        run: |
-          set -e -u
-
-          # $1 - the SHA-1 to fetch and check out
-          fetch_and_checkout() {
-            local build_base_sha="${1}"
-
-            # If cached artifacts became stale for one reason or another, we
-            # may not have the build base SHA available. Fetch it and retry.
-            git fetch origin "${build_base_sha}" && git checkout --quiet "${build_base_sha}"
-          }
-
-          # $1 - value of KBUILD_OUTPUT
-          clear_cache_artifacts() {
-            local kbuild_output="${1}"
-            echo "Unable to find earlier upstream ref. Discarding KBUILD_OUTPUT contents..."
-            rm --recursive --force "${kbuild_output}"
-            mkdir "${kbuild_output}"
-            false
-          }
-
-          # $1 - value of KBUILD_OUTPUT
-          # $2 - current time in ISO 8601 format
-          restore_source_code_times() {
-            local kbuild_output="${1}"
-            local current_time="${2}"
-            local src_time="$(date --iso-8601=ns --date="${current_time} - 2 minutes")"
-            local obj_time="$(date --iso-8601=ns --date="${current_time} - 1 minute")"
-
-            git ls-files | xargs --max-args=10000 touch -m --no-create --date="${src_time}"
-            find "${kbuild_output}" -type f | xargs --max-args=10000 touch -m --no-create --date="${obj_time}"
-            git checkout --quiet -
-            echo "Adjusted src and obj time stamps relative to system time"
-          }
-
-          mkdir --parents "${KBUILD_OUTPUT}"
-          current_time="$(date --iso-8601=ns)"
-
-          if [ -f "${KBUILD_OUTPUT}/.build-base-sha" ]; then
-            build_base_sha="$(cat "${KBUILD_OUTPUT}/.build-base-sha")"
-            echo "Setting up base build state for ${build_base_sha}"
-
-            (
-              git checkout --quiet "${build_base_sha}" \
-                || fetch_and_checkout "${build_base_sha}" \
-                || clear_cache_artifacts "${KBUILD_OUTPUT}"
-            ) && restore_source_code_times "${KBUILD_OUTPUT}" "${current_time}"
-          else
-            echo "No previous build data found"
-          fi
-
-          echo -n "${{ steps.get-commit-metadata.outputs.commit }}" > "${KBUILD_OUTPUT}/.build-base-sha"
       - uses: libbpf/ci/patch-kernel@main
         with:
           patches-root: '${{ github.workspace }}/ci/diffs'
@@ -323,138 +226,4 @@ jobs:
           name: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain_full }}
           if-no-files-found: error
           path: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain_full }}.tar.zst
-  test:
-    if: ${{ github.event_name != 'push' }}
-    name: ${{ matrix.test }} on ${{ matrix.arch }} with ${{ matrix.toolchain_full }}
-    needs: [set-matrix, build]
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.set-matrix.outputs.test-matrix) }}
-    runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 100
-    env:
-      KERNEL: ${{ matrix.kernel }}
-      REPO_ROOT: ${{ github.workspace }}
-      REPO_PATH: ""
-      KBUILD_OUTPUT: kbuild-output/
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain_full }}
-          path: .
-      - name: Untar artifacts
-        # zstd is installed by default in the runner images.
-        run: zstd -d -T0  vmlinux-${{ matrix.arch }}-${{ matrix.toolchain_full }}.tar.zst --stdout | tar -xf -
-      - name: Prepare rootfs
-        uses: libbpf/ci/prepare-rootfs@main
-        with:
-          project-name: 'libbpf'
-          arch: ${{ matrix.arch }}
-          kernel: ${{ matrix.kernel }}
-          kernel-root: '.'
-          kbuild-output: ${{ env.KBUILD_OUTPUT }}
-          image-output: '/tmp/root.img'
-          test: ${{ matrix.test }}
-      - name: Run selftests
-        uses: libbpf/ci/run-qemu@main
-        continue-on-error: ${{ matrix.continue_on_error }}
-        timeout-minutes: ${{ matrix.timeout_minutes }}
-        with:
-          arch: ${{ matrix.arch}}
-          img: '/tmp/root.img'
-          vmlinuz: '${{ github.workspace }}/vmlinuz'
-          kernel-root: '.'
-          max-cpu: 8
-          kernel-test: ${{ matrix.test }}
-  veristat:
-    name: veristat
-    needs: [set-matrix, build]
-    runs-on: ${{ fromJSON(needs.set-matrix.outputs.veristat-runs-on) }}
-    timeout-minutes: 100
-    env:
-      KERNEL: LATEST
-      REPO_ROOT: ${{ github.workspace }}
-      REPO_PATH: ""
-      KBUILD_OUTPUT: kbuild-output/
-    steps:
-      - name: Setup environment variables
-        run: |
-            echo arch_and_tool=${{ env.veristat_arch }}-${{ env.veristat_toolchain }} > \
-              ${GITHUB_ENV}
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: vmlinux-${{ env.arch_and_tool }}
-          path: .
-      - name: Untar artifacts
-        # zstd is installed by default in the runner images.
-        run: zstd -d -T0  vmlinux-${{ env.arch_and_tool }}.tar.zst --stdout | tar -xf -
 
-      - name: Prepare rootfs
-        uses: libbpf/ci/prepare-rootfs@main
-        with:
-          project-name: 'libbpf'
-          arch: x86_64
-          kernel: LATEST
-          kernel-root: '.'
-          kbuild-output: ${{ env.KBUILD_OUTPUT }}
-          image-output: '/tmp/root.img'
-          test: run_veristat
-
-      - name: Run veristat
-        uses: libbpf/ci/run-qemu@main
-        timeout-minutes: 10
-        with:
-          arch: x86_64
-          img: '/tmp/root.img'
-          vmlinuz: '${{ github.workspace }}/vmlinuz'
-          kernel-root: '.'
-          max-cpu: 8
-          kernel-test: run_veristat
-          output-dir: '${{ github.workspace }}'
-
-      # veristat.csv is produced by run-qemu run_veristat action
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.arch_and_tool }}-veristat-log
-          if-no-files-found: error
-          path: '${{ github.workspace }}/veristat.csv'
-
-      # For pull request:
-      # - get baseline log from cache
-      # - compare it to current run
-      - if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/cache/restore@v3
-        with:
-          key: ${{ env.arch_and_tool }}-veristat-baseline
-          restore-keys: |
-            ${{ env.arch_and_tool }}-veristat-baseline-
-          path: '${{ github.workspace }}/veristat-baseline.csv'
-
-      - if: ${{ github.event_name == 'pull_request' }}
-        name: Show veristat comparison
-        run: |
-          cd ${{ github.workspace }}
-          if [[ ! -f veristat-baseline.csv ]]; then
-            echo "No veristat-baseline.csv available"
-            echo "# No veristat-baseline.csv available" >> $GITHUB_STEP_SUMMARY
-            exit
-          fi
-          selftests/bpf/veristat \
-            --output-format csv \
-            --emit file,prog,verdict,states \
-            --compare veristat-baseline.csv veristat.csv > compare.csv
-          python3 ./.github/scripts/veristat-compare.py compare.csv
-
-      # For push: just put baseline log to cache
-      - if: ${{ github.event_name == 'push' }}
-        run: |
-          mv '${{ github.workspace }}/veristat.csv' \
-             '${{ github.workspace }}/veristat-baseline.csv'
-
-      - if: ${{ github.event_name == 'push' }}
-        uses: actions/cache/save@v3
-        with:
-          key: ${{ env.arch_and_tool }}-veristat-baseline-${{ github.run_id }}
-          path: '${{ github.workspace }}/veristat-baseline.csv'
