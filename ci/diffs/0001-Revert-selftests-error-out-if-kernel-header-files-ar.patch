@@ -1,0 +1,129 @@
+From 061f6eba3491dfb7bffd9fdd97f4be0c867423f6 Mon Sep 17 00:00:00 2001
+From: Daniel Borkmann <daniel@iogearbox.net>
+Date: Fri, 30 Jun 2023 16:38:44 +0000
+Subject: [PATCH] Revert "selftests: error out if kernel header files are not
+ yet built"
+
+This reverts commit 9fc96c7c19dfab67bf81b25fbc4f49b7752d5060.
+
+This breaks BPF CI.
+
+Signed-off-by: Daniel Borkmann <daniel@iogearbox.net>
+---
+ tools/testing/selftests/Makefile | 21 +----------------
+ tools/testing/selftests/lib.mk   | 40 +++-----------------------------
+ 2 files changed, 4 insertions(+), 57 deletions(-)
+
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 6b456c5ecec1..5d6fc3f39284 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -145,12 +145,10 @@ ifneq ($(KBUILD_OUTPUT),)
+   abs_objtree := $(realpath $(abs_objtree))
+   BUILD := $(abs_objtree)/kselftest
+   KHDR_INCLUDES := -isystem ${abs_objtree}/usr/include
+-  KHDR_DIR := ${abs_objtree}/usr/include
+ else
+   BUILD := $(CURDIR)
+   abs_srctree := $(shell cd $(top_srcdir) && pwd)
+   KHDR_INCLUDES := -isystem ${abs_srctree}/usr/include
+-  KHDR_DIR := ${abs_srctree}/usr/include
+   DEFAULT_INSTALL_HDR_PATH := 1
+ endif
+ 
+@@ -164,7 +162,7 @@ export KHDR_INCLUDES
+ # all isn't the first target in the file.
+ .DEFAULT_GOAL := all
+ 
+-all: kernel_header_files
++all:
+ 	@ret=1;							\
+ 	for TARGET in $(TARGETS); do				\
+ 		BUILD_TARGET=$$BUILD/$$TARGET;			\
+@@ -175,23 +173,6 @@ all: kernel_header_files
+ 		ret=$$((ret * $$?));				\
+ 	done; exit $$ret;
+ 
+-kernel_header_files:
+-	@ls $(KHDR_DIR)/linux/*.h >/dev/null 2>/dev/null;                          \
+-	if [ $$? -ne 0 ]; then                                                     \
+-            RED='\033[1;31m';                                                  \
+-            NOCOLOR='\033[0m';                                                 \
+-            echo;                                                              \
+-            echo -e "$${RED}error$${NOCOLOR}: missing kernel header files.";   \
+-            echo "Please run this and try again:";                             \
+-            echo;                                                              \
+-            echo "    cd $(top_srcdir)";                                       \
+-            echo "    make headers";                                           \
+-            echo;                                                              \
+-	    exit 1;                                                                \
+-	fi
+-
+-.PHONY: kernel_header_files
+-
+ run_tests: all
+ 	@for TARGET in $(TARGETS); do \
+ 		BUILD_TARGET=$$BUILD/$$TARGET;	\
+diff --git a/tools/testing/selftests/lib.mk b/tools/testing/selftests/lib.mk
+index d17854285f2b..05400462c779 100644
+--- a/tools/testing/selftests/lib.mk
++++ b/tools/testing/selftests/lib.mk
+@@ -44,26 +44,10 @@ endif
+ selfdir = $(realpath $(dir $(filter %/lib.mk,$(MAKEFILE_LIST))))
+ top_srcdir = $(selfdir)/../../..
+ 
+-ifeq ("$(origin O)", "command line")
+-  KBUILD_OUTPUT := $(O)
++ifeq ($(KHDR_INCLUDES),)
++KHDR_INCLUDES := -isystem $(top_srcdir)/usr/include
+ endif
+ 
+-ifneq ($(KBUILD_OUTPUT),)
+-  # Make's built-in functions such as $(abspath ...), $(realpath ...) cannot
+-  # expand a shell special character '~'. We use a somewhat tedious way here.
+-  abs_objtree := $(shell cd $(top_srcdir) && mkdir -p $(KBUILD_OUTPUT) && cd $(KBUILD_OUTPUT) && pwd)
+-  $(if $(abs_objtree),, \
+-    $(error failed to create output directory "$(KBUILD_OUTPUT)"))
+-  # $(realpath ...) resolves symlinks
+-  abs_objtree := $(realpath $(abs_objtree))
+-  KHDR_DIR := ${abs_objtree}/usr/include
+-else
+-  abs_srctree := $(shell cd $(top_srcdir) && pwd)
+-  KHDR_DIR := ${abs_srctree}/usr/include
+-endif
+-
+-KHDR_INCLUDES := -isystem $(KHDR_DIR)
+-
+ # The following are built by lib.mk common compile rules.
+ # TEST_CUSTOM_PROGS should be used by tests that require
+ # custom build rule and prevent common build rule use.
+@@ -74,25 +58,7 @@ TEST_GEN_PROGS := $(patsubst %,$(OUTPUT)/%,$(TEST_GEN_PROGS))
+ TEST_GEN_PROGS_EXTENDED := $(patsubst %,$(OUTPUT)/%,$(TEST_GEN_PROGS_EXTENDED))
+ TEST_GEN_FILES := $(patsubst %,$(OUTPUT)/%,$(TEST_GEN_FILES))
+ 
+-all: kernel_header_files $(TEST_GEN_PROGS) $(TEST_GEN_PROGS_EXTENDED) \
+-     $(TEST_GEN_FILES)
+-
+-kernel_header_files:
+-	@ls $(KHDR_DIR)/linux/*.h >/dev/null 2>/dev/null;                      \
+-	if [ $$? -ne 0 ]; then                                                 \
+-            RED='\033[1;31m';                                                  \
+-            NOCOLOR='\033[0m';                                                 \
+-            echo;                                                              \
+-            echo -e "$${RED}error$${NOCOLOR}: missing kernel header files.";   \
+-            echo "Please run this and try again:";                             \
+-            echo;                                                              \
+-            echo "    cd $(top_srcdir)";                                       \
+-            echo "    make headers";                                           \
+-            echo;                                                              \
+-	    exit 1; \
+-	fi
+-
+-.PHONY: kernel_header_files
++all: $(TEST_GEN_PROGS) $(TEST_GEN_PROGS_EXTENDED) $(TEST_GEN_FILES)
+ 
+ define RUN_TESTS
+ 	BASE_DIR="$(selfdir)";			\
+-- 
+2.34.1
+
