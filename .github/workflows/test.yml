@@ -181,19 +181,22 @@ jobs:
       REPO_ROOT: ${{ github.workspace }}
       REPO_PATH: ""
       KBUILD_OUTPUT: kbuild-output/
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Setup environment variables
         run: |
-            echo arch_and_tool=${{ env.veristat_arch }}-${{ env.veristat_toolchain }} > \
+            echo ARCH_AND_TOOL=${{ env.veristat_arch }}-${{ env.veristat_toolchain }} >> \
               ${GITHUB_ENV}
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
-          name: vmlinux-${{ env.arch_and_tool }}
+          name: vmlinux-${{ env.ARCH_AND_TOOL }}
           path: .
       - name: Untar artifacts
         # zstd is installed by default in the runner images.
-        run: zstd -d -T0  vmlinux-${{ env.arch_and_tool }}.tar.zst --stdout | tar -xf -
+        run: zstd -d -T0  vmlinux-${{ env.ARCH_AND_TOOL }}.tar.zst --stdout | tar -xf -
 
       - name: Prepare rootfs
         uses: libbpf/ci/prepare-rootfs@main
@@ -204,51 +207,47 @@ jobs:
           kernel-root: '.'
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           image-output: '/tmp/root.img'
-          test: run_veristat
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: github-action-bpf-ci
+
+      - name: Download BPF objects
+        run: |
+          set -eux
+          if [ -n "$AWS_ROLE_ARN" ]; then
+            mkdir /tmp/bpf_objects
+            aws s3 sync s3://veristat-bpf-binaries /tmp/bpf_objects
+          fi
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Add BPF objects to rootfs
+        shell: bash
+        run: ./.github/scripts/bpf-objects-rootfs.sh
 
       - name: Run veristat
         uses: libbpf/ci/run-qemu@main
-        timeout-minutes: 10
         with:
           arch: x86_64
           img: '/tmp/root.img'
           vmlinuz: '${{ github.workspace }}/vmlinuz'
           kernel-root: '.'
           max-cpu: 8
-          kernel-test: run_veristat
+          kernel-test: run_veristat_kernel,run_veristat_meta
           output-dir: '${{ github.workspace }}'
 
-      # veristat.csv is produced by run-qemu run_veristat action
-      - uses: actions/upload-artifact@v3
+      - name: Compare and save veristat.kernel.csv
+        uses: ./.github/actions/veristat_baseline_compare
         with:
-          name: ${{ env.arch_and_tool }}-veristat-log
-          if-no-files-found: error
-          path: '${{ github.workspace }}/veristat.csv'
+          arch_and_tool: ${{ env.ARCH_AND_TOOL}}
+          veristat_output: veristat.kernel.csv
 
-      # For pull request:
-      # - get baseline log from cache
-      # - compare it to current run
-      - if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/cache/restore@v3
+      - name: Compare and save veristat.meta.csv
+        uses: ./.github/actions/veristat_baseline_compare
         with:
-          key: ${{ env.arch_and_tool }}-veristat-baseline
-          restore-keys: |
-            ${{ env.arch_and_tool }}-veristat-baseline-
-          path: '${{ github.workspace }}/veristat-baseline.csv'
-
-      - if: ${{ github.event_name == 'pull_request' }}
-        name: Show veristat comparison
-        run: |
-          bash .github/scripts/show-veristat-comparison.sh
-
-      # For push: just put baseline log to cache
-      - if: ${{ github.event_name == 'push' }}
-        run: |
-          mv '${{ github.workspace }}/veristat.csv' \
-             '${{ github.workspace }}/veristat-baseline.csv'
-
-      - if: ${{ github.event_name == 'push' }}
-        uses: actions/cache/save@v3
-        with:
-          key: ${{ env.arch_and_tool }}-veristat-baseline-${{ github.run_id }}
-          path: '${{ github.workspace }}/veristat-baseline.csv'
+          arch_and_tool: ${{ env.ARCH_AND_TOOL}}
+          veristat_output: veristat.meta.csv

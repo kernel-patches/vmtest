@@ -17,7 +17,8 @@ ARCH=$(uname -m)
 STATUS_FILE=/exitstatus
 OUTPUT_DIR=/command_output
 
-declare -a TEST_NAMES=()
+BPF_SELFTESTS_DIR="/${PROJECT_NAME}/selftests/bpf"
+VMTEST_CONFIGS_PATH="/${PROJECT_NAME}/vmtest/configs"
 
 read_lists() {
 	(for path in "$@"; do
@@ -26,6 +27,21 @@ read_lists() {
 		fi;
 	done) | cut -d'#' -f1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | tr -s '\n' ','
 }
+
+DENYLIST=$(read_lists \
+	"$BPF_SELFTESTS_DIR/DENYLIST" \
+	"$BPF_SELFTESTS_DIR/DENYLIST.${ARCH}" \
+	"$VMTEST_CONFIGS_PATH/DENYLIST" \
+	"$VMTEST_CONFIGS_PATH/DENYLIST.${ARCH}" \
+)
+ALLOWLIST=$(read_lists \
+	"$BPF_SELFTESTS_DIR/ALLOWLIST" \
+	"$BPF_SELFTESTS_DIR/ALLOWLIST.${ARCH}" \
+	"$VMTEST_CONFIGS_PATH/ALLOWLIST" \
+	"$VMTEST_CONFIGS_PATH/ALLOWLIST.${ARCH}" \
+)
+
+declare -a TEST_NAMES=()
 
 read_test_names() {
     foldable start read_test_names "Reading test names from boot parameters and command line arguments"
@@ -99,8 +115,8 @@ test_verifier() {
   foldable end test_verifier
 }
 
-run_veristat() {
-  foldable start run_veristat "Running veristat"
+run_veristat_helper() {
+  local mode="${1}"
 
   # Make veristat commands visible in the log
   if [ -o xtrace ]; then
@@ -110,17 +126,37 @@ run_veristat() {
       set -x
   fi
 
-  globs=$(awk '/^#/ { next; } { print $0 ".bpf.o"; }' ./veristat.cfg)
-  mkdir -p ${OUTPUT_DIR}
-  ./veristat -o csv -q -e file,prog,verdict,states ${globs} > ${OUTPUT_DIR}/veristat.csv
-  echo "run_veristat:$?" >> ${STATUS_FILE}
+  (
+    # shellcheck source=ci/vmtest/configs/run_veristat.default.cfg
+    # shellcheck source=ci/vmtest/configs/run_veristat.meta.cfg
+    source "${VMTEST_CONFIGS_PATH}/run_veristat.${mode}.cfg"
+    mkdir -p ${OUTPUT_DIR}
+    pushd "${VERISTAT_OBJECTS_DIR}"
+
+    "${BPF_SELFTESTS_DIR}/veristat" -o csv -q -e file,prog,verdict,states ${VERISTAT_OBJECTS_GLOB} > \
+      "${OUTPUT_DIR}/${VERISTAT_OUTPUT}"
+
+    echo "run_veristat_${mode}:$?" >> ${STATUS_FILE}
+    popd
+  )
 
   # Hide commands again
   if [ -z "$xtrace_was_on" ]; then
       set +x
   fi
 
-  foldable end run_veristat
+}
+
+run_veristat_kernel() {
+  foldable start run_veristat_kernel "Running veristat.kernel"
+  run_veristat_helper "kernel"
+  foldable end run_veristat_kernel
+}
+
+run_veristat_meta() {
+  foldable start run_veristat_meta "Running veristat.meta"
+  run_veristat_helper "meta"
+  foldable end run_veristat_meta
 }
 
 foldable end vm_init
@@ -130,21 +166,6 @@ foldable start kernel_config "Kconfig"
 zcat /proc/config.gz
 
 foldable end kernel_config
-
-configs_path=${PROJECT_NAME}/selftests/bpf
-local_configs_path=${PROJECT_NAME}/vmtest/configs
-DENYLIST=$(read_lists \
-	"$configs_path/DENYLIST" \
-	"$configs_path/DENYLIST.${ARCH}" \
-	"$local_configs_path/DENYLIST" \
-	"$local_configs_path/DENYLIST.${ARCH}" \
-)
-ALLOWLIST=$(read_lists \
-	"$configs_path/ALLOWLIST" \
-	"$configs_path/ALLOWLIST.${ARCH}" \
-	"$local_configs_path/ALLOWLIST" \
-	"$local_configs_path/ALLOWLIST.${ARCH}" \
-)
 
 echo "DENYLIST: ${DENYLIST}"
 echo "ALLOWLIST: ${ALLOWLIST}"
