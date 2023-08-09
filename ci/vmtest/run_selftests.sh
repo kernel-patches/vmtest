@@ -102,10 +102,23 @@ test_verifier() {
 run_veristat() {
   foldable start run_veristat "Running veristat"
 
+  # Make veristat commands visible in the log
+  if [ -o xtrace ]; then
+      xtrace_was_on="1"
+  else
+      xtrace_was_on=""
+      set -x
+  fi
+
   globs=$(awk '/^#/ { next; } { print $0 ".bpf.o"; }' ./veristat.cfg)
   mkdir -p ${OUTPUT_DIR}
   ./veristat -o csv -q -e file,prog,verdict,states ${globs} > ${OUTPUT_DIR}/veristat.csv
   echo "run_veristat:$?" >> ${STATUS_FILE}
+
+  # Hide commands again
+  if [ -z "$xtrace_was_on" ]; then
+      set +x
+  fi
 
   foldable end run_veristat
 }
