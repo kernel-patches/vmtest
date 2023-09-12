@@ -3,7 +3,7 @@
 branch="${GITHUB_BASE_REF}"
 
 if [ "${GITHUB_EVENT_NAME}" = 'push' ]; then
-  branch="${GITHUB_REF_NAME}"
+  branch="${GITHUB_REF}"
 fi
 
 echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
