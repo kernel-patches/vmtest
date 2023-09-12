@@ -23,7 +23,8 @@ runs:
       uses: actions/cache/restore@v3
       with:
         key: ${{ env.CACHE_RESULT_KEY }}
-        restore-keys: ${{ env.CACHE_RESULT_KEY }}
+        restore-keys: |
+          - ${{ env.CACHE_RESULT_KEY }}
         path: '${{ env.CACHE_RESULT_KEY }}'
       env:
         CACHE_RESULT_KEY: ${{ inputs.arch_and_tool }}-baseline-${{ inputs.veristat_output }}
@@ -41,7 +42,7 @@ runs:
       uses: actions/cache/save@v3
       with:
         key: ${{ env.CACHE_RESULT_KEY }}
-        path: ${{ github.workspace }}/${{ inputs.veristat_output }}
+        path: '${{ github.workspace }}/${{ env.CACHE_RESULT_KEY }}'
       env:
         CACHE_RESULT_KEY: ${{ inputs.arch_and_tool }}-baseline-${{ inputs.veristat_output }}
 
