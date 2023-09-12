@@ -41,7 +41,7 @@ runs:
       uses: actions/cache/save@v3
       with:
         key: ${{ env.CACHE_RESULT_KEY }}
-        path: '${{ github.workspace }}/${{ env.CACHE_RESULT_KEY }}'
+        path: ${{ github.workspace }}/${{ inputs.veristat_output }}
       env:
         CACHE_RESULT_KEY: ${{ inputs.arch_and_tool }}-baseline-${{ inputs.veristat_output }}
 
