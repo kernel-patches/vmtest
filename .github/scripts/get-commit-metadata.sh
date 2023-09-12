@@ -3,12 +3,12 @@
 branch="${GITHUB_BASE_REF}"
 
 if [ "${GITHUB_EVENT_NAME}" = 'push' ]; then
-  branch="${GITHUB_REF}"
+  branch="${GITHUB_REF_NAME}"
 fi
 
 echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
 
-upstream="${branch//_base$/}"
+upstream="${branch//_base/}"
 commit="$(
   git rev-parse "origin/${upstream}" &> /dev/null \
     || (
