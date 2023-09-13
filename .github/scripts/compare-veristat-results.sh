@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [[ ! -f "${CACHE_RESULT_KEY}" ]]; then
-    echo "# No ${CACHE_RESULT_KEY} available" >> "${GITHUB_STEP_SUMMARY}"
+if [[ ! -f "${BASELINE_PATH}" ]]; then
+    echo "# No ${BASELINE_PATH} available" >> "${GITHUB_STEP_SUMMARY}"
 
-    echo "No ${CACHE_RESULT_KEY} available"
+    echo "No ${BASELINE_PATH} available"
     echo "Printing veristat results"
     cat "${VERISTAT_OUTPUT}"
 
@@ -13,6 +13,6 @@ fi
 selftests/bpf/veristat \
     --output-format csv \
     --emit file,prog,verdict,states \
-    --compare "${CACHE_RESULT_KEY}" "${VERISTAT_OUTPUT}" > compare.csv
+    --compare "${BASELINE_PATH}" "${VERISTAT_OUTPUT}" > compare.csv
 
 python3 ./.github/scripts/veristat-compare.py compare.csv
