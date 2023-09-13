@@ -1,18 +1,18 @@
 name: 'run-veristat'
 description: 'Run veristat benchmark'
 inputs:
-  arch_and_tool:
-    description: 'arch and build tool string'
-    required: true
   veristat_output:
-    description: 'veristat output'
+    description: 'Veristat output filepath'
+    required: true
+  baseline_name:
+    description: 'Veristat baseline cache name'
     required: true
 runs:
   using: "composite"
   steps:
     - uses: actions/upload-artifact@v3
       with:
-        name: ${{ inputs.arch_and_tool }}-baseline-${{ inputs.veristat_output }}
+        name: ${{ inputs.baseline_name }}
         if-no-files-found: error
         path: ${{ github.workspace }}/${{ inputs.veristat_output }}
 
@@ -22,27 +22,28 @@ runs:
     - if: ${{ github.event_name == 'pull_request' }}
       uses: actions/cache/restore@v3
       with:
-        key: ${{ env.CACHE_RESULT_KEY }}
+        key: ${{ inputs.baseline_name }}
         restore-keys: |
-          ${{ env.CACHE_RESULT_KEY }}-
-        path: '${{ env.CACHE_RESULT_KEY }}'
-      env:
-        CACHE_RESULT_KEY: ${{ inputs.arch_and_tool }}-baseline-${{ inputs.veristat_output }}
+          ${{ inputs.baseline_name }}-
+        path: '${{ github.workspace }}/${{ inputs.baseline_name }}'
 
     - if: ${{ github.event_name == 'pull_request' }}
       name: Show veristat comparison
       shell: bash
       run: ./.github/scripts/compare-veristat-results.sh
       env:
-        CACHE_RESULT_KEY: ${{ inputs.arch_and_tool }}-baseline-${{ inputs.veristat_output }}
+        BASELINE_PATH: ${{ github.workspace }}/${{ inputs.baseline_name }}
         VERISTAT_OUTPUT: ${{ inputs.veristat_output }}
 
     # For push: just put baseline log to cache
     - if: ${{ github.event_name == 'push' }}
+      shell: bash
+      run: |
+        mv "${{ github.workspace }}/${{ inputs.veristat_output }}" \
+           "${{ github.workspace }}/${{ inputs.baseline_name }}"
+
+    - if: ${{ github.event_name == 'push' }}
       uses: actions/cache/save@v3
       with:
         key: ${{ env.CACHE_RESULT_KEY }}-${{ github.run_id }}
-        path: '${{ github.workspace }}/${{ inputs.veristat_output }}'
-      env:
-        CACHE_RESULT_KEY: ${{ inputs.arch_and_tool }}-baseline-${{ inputs.veristat_output }}
-
+        path: '${{ github.workspace }}/${{ inputs.baseline_name }}'
