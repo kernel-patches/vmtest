@@ -244,10 +244,10 @@ jobs:
         uses: ./.github/actions/veristat_baseline_compare
         with:
           arch_and_tool: ${{ env.ARCH_AND_TOOL}}
-          veristat_output: veristat.kernel.csv
+          veristat_output: veristat-kernel
 
       - name: Compare and save veristat.meta.csv
         uses: ./.github/actions/veristat_baseline_compare
         with:
           arch_and_tool: ${{ env.ARCH_AND_TOOL}}
-          veristat_output: veristat.meta.csv
+          veristat_output: veristat-meta
