@@ -45,5 +45,5 @@ runs:
     - if: ${{ github.event_name == 'push' }}
       uses: actions/cache/save@v3
       with:
-        key: ${{ env.CACHE_RESULT_KEY }}-${{ github.run_id }}
+        key: ${{ inputs.baseline_name }}-${{ github.run_id }}
         path: '${{ github.workspace }}/${{ inputs.baseline_name }}'
