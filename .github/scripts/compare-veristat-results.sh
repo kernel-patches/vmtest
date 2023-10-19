@@ -15,4 +15,4 @@ selftests/bpf/veristat \
     --emit file,prog,verdict,states \
     --compare "${BASELINE_PATH}" "${VERISTAT_OUTPUT}" > compare.csv
 
-python3 ./.github/scripts/veristat-compare.py compare.csv
+python3 ./.github/scripts/veristat_compare.py compare.csv

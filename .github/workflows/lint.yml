@@ -53,3 +53,13 @@ jobs:
         run: |
           python3 .github/scripts/matrix.py
 
+  unittests:
+    if: ${{ github.repository == 'kernel-patches/vmtest' }}
+    name: Unittests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Run unittests
+        run: python3 -m unittest scripts/tests/*.py
+        working-directory: .github
