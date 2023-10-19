@@ -44,7 +44,7 @@ import logging
 import argparse
 import enum
 from dataclasses import dataclass
-from typing import Dict, List, Final
+from typing import Dict, Iterable, List, Final
 
 
 TRESHOLD_PCT: Final[int] = 0
@@ -153,7 +153,7 @@ def get_state_diff(value: str) -> float:
     raise ValueError(f"Invalid {VeristatFields.TOTAL_STATES_DIFF} field value: {value}")
 
 
-def parse_table(csv_file):
+def parse_table(csv_file: Iterable[str]) -> VeristatInfo:
     reader = csv.DictReader(csv_file)
     assert reader.fieldnames == VeristatFields.headers()
 
