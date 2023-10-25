@@ -110,12 +110,15 @@ if (
     os.environ["GITHUB_REPOSITORY_OWNER"] != "kernel-patches"
     or os.environ["GITHUB_REPOSITORY"] not in self_hosted_repos
 ):
-    # Outside of those repositories, we only run on x86_64 GH hosted runners (ubuntu-latest)
+    # Outside of those repositories, we only run on x86_64 GH hosted runners (ubuntu-20.04)
+    # We need to run on ubuntu 20.04 because our rootfs is based on debian buster and we
+    # otherwise get library versioning issue such as
+    # `./test_verifier: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.34' not found (required by ./test_verifier)`
     for idx in range(len(matrix) - 1, -1, -1):
         if matrix[idx]["arch"] != Arch.X86_64.value:
             del matrix[idx]
         else:
-            matrix[idx]["runs_on"] = ["ubuntu-latest"]
+            matrix[idx]["runs_on"] = ["ubuntu-20.04"]
 else:
     # Otherwise, run on (self-hosted, arch) runners
     for idx in range(len(matrix) - 1, -1, -1):
