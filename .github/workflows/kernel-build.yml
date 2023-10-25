@@ -7,21 +7,27 @@ on:
       arch:
         required: true
         type: string
+        description: The architecture to build against, e.g x86_64, aarch64, s390x...
       toolchain_full:
         required: true
         type: string
+        description: The toolchain and for llvm, its version, e.g gcc, llvm-15
       toolchain:
         required: true
         type: string
+        description: The toolchain, e.g gcc, llvm
       runs_on:
         required: true
         type: string
+        description: The runners to run the test on. This is a json string representing an array of labels.
       llvm-version:
         required: true
         type: string
+        description: The version of LLVM used to build selftest.... for llvm toolchain, this should match the one from toolchain_full, for gcc it is an arbritrary version we decide to build selftests against.
       kernel:
         required: true
         type: string
+        description: The kernel to run the test against. For KPD this is always LATEST, which runs against a newly built kernel.
 
  
 jobs:

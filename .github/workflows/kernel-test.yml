@@ -6,24 +6,31 @@ on:
       arch:
         required: true
         type: string
+        description: The architecture to build against, e.g x86_64, aarch64, s390x...
       toolchain_full:
         required: true
         type: string
+        description: The toolchain and for llvm, its version, e.g gcc, llvm-15
       runs_on:
         required: true
         type: string
+        description: The runners to run the test on. This is a json string representing an array of labels.
       kernel:
         required: true
         type: string
+        description: The kernel to run the test against. For KPD this is always LATEST, which runs against a newly built kernel.
       test:
         required: true
         type: string
+        description: The test to run in the vm, e.g test_progs, test_maps, test_progs_no_alu32...
       continue_on_error:
         required: true
         type: string
+        description: Whether to continue on error. This is typically set to true for parallel tests which are currently known to fail, but we don't want to fail the whole CI because of that.
       timeout_minutes:
         required: true
         type: number
+        description: In case a test runs for too long, after how many seconds shall we timeout and error.
 
 jobs:
   test:
