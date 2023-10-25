@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from copy import deepcopy
 from json import dumps
 from enum import Enum
 import os
@@ -120,7 +121,14 @@ else:
     for idx in range(len(matrix) - 1, -1, -1):
         matrix[idx]["runs_on"].extend(["self-hosted", matrix[idx]["arch"]])
 
-build_matrix = {"include": matrix}
+build_matrix = {"include": deepcopy(matrix)}
+# include test configs directly with the build config
+for config in build_matrix["include"]:
+    config["tests"] = {"include": [
+        generate_test_config(test)
+        for test in get_tests(config)
+    ]}
+
 set_output("build_matrix", dumps(build_matrix))
 
 test_matrix = {

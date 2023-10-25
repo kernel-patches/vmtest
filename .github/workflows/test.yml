@@ -36,10 +36,12 @@ jobs:
         run: |
           python3 .github/scripts/matrix.py
 
-  # Build kernel and selftest
-  build:
-    uses: ./.github/workflows/kernel-build.yml
-    needs: set-matrix
+  build-and-test:
+    uses: ./.github/workflows/kernel-build-test.yml
+    needs: [set-matrix]
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.set-matrix.outputs.build-matrix) }}
@@ -50,32 +52,7 @@ jobs:
       runs_on: ${{ toJSON(matrix.runs_on) }}
       llvm-version: ${{ matrix.llvm-version }}
       kernel: ${{ matrix.kernel }}
-
-  test:
-    uses: ./.github/workflows/kernel-test.yml
-    needs: [set-matrix, build]
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.set-matrix.outputs.test-matrix) }}
-    with:
-      arch: ${{ matrix.arch }}
-      toolchain_full: ${{ matrix.toolchain_full }}
-      runs_on: ${{ toJSON(matrix.runs_on) }}
-      kernel: ${{ matrix.kernel }}
-      test: ${{ matrix.test }}
-      continue_on_error: ${{ matrix.continue_on_error }}
-      timeout_minutes: ${{ matrix.timeout_minutes }}
-
-  veristat:
-    uses: ./.github/workflows/kernel-veristat.yml
-    needs: [set-matrix, build]
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      arch: x86_64
-      toolchain: gcc
-      aws_region: ${{ vars.AWS_REGION }}
-      runs_on: ${{ fromJSON(needs.set-matrix.outputs.veristat-runs-on) }}
+      tests: ${{ toJSON(matrix.tests) }}
+      veristat_runs_on: ${{ needs.set-matrix.outputs.veristat-runs-on }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
