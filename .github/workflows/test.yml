@@ -49,49 +49,20 @@ jobs:
       kernel: ${{ matrix.kernel }}
    
   test:
-    if: ${{ github.event_name != 'push' }}
-    name: ${{ matrix.test }} on ${{ matrix.arch }} with ${{ matrix.toolchain_full }}
+    uses: ./.github/workflows/kernel-test.yml
     needs: [set-matrix, build]
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.set-matrix.outputs.test-matrix) }}
-    runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 100
-    env:
-      KERNEL: ${{ matrix.kernel }}
-      REPO_ROOT: ${{ github.workspace }}
-      REPO_PATH: ""
-      KBUILD_OUTPUT: kbuild-output/
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: vmlinux-${{ matrix.arch }}-${{ matrix.toolchain_full }}
-          path: .
-      - name: Untar artifacts
-        # zstd is installed by default in the runner images.
-        run: zstd -d -T0  vmlinux-${{ matrix.arch }}-${{ matrix.toolchain_full }}.tar.zst --stdout | tar -xf -
-      - name: Prepare rootfs
-        uses: libbpf/ci/prepare-rootfs@main
-        with:
-          project-name: 'libbpf'
-          arch: ${{ matrix.arch }}
-          kernel: ${{ matrix.kernel }}
-          kernel-root: '.'
-          kbuild-output: ${{ env.KBUILD_OUTPUT }}
-          image-output: '/tmp/root.img'
-          test: ${{ matrix.test }}
-      - name: Run selftests
-        uses: libbpf/ci/run-qemu@main
-        continue-on-error: ${{ matrix.continue_on_error }}
-        timeout-minutes: ${{ matrix.timeout_minutes }}
-        with:
-          arch: ${{ matrix.arch}}
-          img: '/tmp/root.img'
-          vmlinuz: '${{ github.workspace }}/vmlinuz'
-          kernel-root: '.'
-          max-cpu: 8
-          kernel-test: ${{ matrix.test }}
+    with:
+      arch: ${{ matrix.arch }}
+      toolchain_full: ${{ matrix.toolchain_full }}
+      runs_on: ${{ toJSON(matrix.runs_on) }}
+      kernel: ${{ matrix.kernel }}
+      test: ${{ matrix.test }}
+      continue_on_error: ${{ matrix.continue_on_error }}
+      timeout_minutes: ${{ matrix.timeout_minutes }}
+
   veristat:
     name: veristat
     needs: [set-matrix, build]
