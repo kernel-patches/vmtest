@@ -6,18 +6,23 @@ on:
       arch:
         required: true
         type: string
+        description: The architecture to build against, e.g x86_64, aarch64, s390x...
       toolchain:
         required: true
         type: string
+        description: The toolchain, e.g gcc, llvm
       runs_on:
         required: true
         type: string
+        description: The runners to run the test on. This is a json string representing an array of labels.
       aws_region:
         required: true
         type: string
+        description: The AWS region where we pull bpf objects to run against veristat.
     secrets:
         AWS_ROLE_ARN:
             required: true
+            description: The AWS role used by GH to pull BPF objects from AWS.
 
 jobs:
   veristat:
