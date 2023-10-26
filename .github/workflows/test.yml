@@ -7,13 +7,6 @@ on:
       - bpf_base
       - bpf-next_base
 
-# FIXME: We are using env variable here for set-matrix, and later in veristat job, hardcoded values
-# We should probably let the python script deal with it and generate a matrix that we pass onto
-# the reusable workflow.
-env:
-  veristat_arch: x86_64
-  veristat_toolchain: gcc
-
 concurrency:
   group: ci-test-${{ github.ref_name }}
   cancel-in-progress: true
@@ -28,8 +21,6 @@ jobs:
     runs-on: ${{ github.repository_owner == 'kernel-patches' && 'x86_64' || 'ubuntu-latest' }}
     outputs:
       build-matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
-      test-matrix: ${{ steps.set-matrix-impl.outputs.test_matrix }}
-      veristat-runs-on: ${{ steps.set-matrix-impl.outputs.veristat_runs_on }}
     steps:
       - uses: actions/checkout@v3
       - id: set-matrix-impl
@@ -56,6 +47,6 @@ jobs:
       llvm-version: ${{ matrix.llvm-version }}
       kernel: ${{ matrix.kernel }}
       tests: ${{ toJSON(matrix.tests) }}
-      veristat_runs_on: ${{ needs.set-matrix.outputs.veristat-runs-on }}
+      run_veristat: ${{ matrix.run_veristat }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}

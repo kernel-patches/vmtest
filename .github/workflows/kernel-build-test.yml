@@ -31,10 +31,10 @@ on:
         required: true
         type: string
         description: A serialized json array with the tests to be running, it must follow the json-matrix format, https://www.jitsejan.com/use-github-actions-with-json-file-as-matrix
-      veristat_runs_on:
+      run_veristat:
         required: true
-        type: string
-        description: Runners to run veristat on.
+        type: boolean
+        description: Whether or not to run veristat
     secrets:
       AWS_ROLE_ARN:
         required: true
@@ -70,7 +70,7 @@ jobs:
       timeout_minutes: ${{ matrix.timeout_minutes }}
 
   veristat:
-    if: ${{ inputs.arch == 'x86_64' &&  inputs.toolchain  == 'gcc' }}
+    if: ${{ inputs.run_veristat }}
     uses: ./.github/workflows/kernel-veristat.yml
     needs: [build]
     permissions:
@@ -80,6 +80,6 @@ jobs:
       arch: ${{ inputs.arch }}
       toolchain: ${{ inputs.toolchain }}
       aws_region: ${{ vars.AWS_REGION }}
-      runs_on: ${{ inputs.veristat_runs_on }}
+      runs_on: ${{ inputs.runs_on }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
