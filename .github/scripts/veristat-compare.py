@@ -52,17 +52,22 @@ TRESHOLD_PCT: Final[int] = 0
 SUMMARY_HEADERS = ["File", "Program", "Verdict", "States Diff (%)"]
 
 # expected format: +0 (+0.00%) / -0 (-0.00%)
-TOTAL_STATES_DIFF_REGEX = \
+TOTAL_STATES_DIFF_REGEX = (
     r"(?P<absolute_diff>[+-]\d+) \((?P<percentage_diff>[+-]\d+\.\d+)\%\)"
+)
 
 
-TEXT_SUMMARY_TEMPLATE: Final[str] = """
+TEXT_SUMMARY_TEMPLATE: Final[
+    str
+] = """
 # {title}
 
 {table}
 """.strip()
 
-HTML_SUMMARY_TEMPLATE: Final[str] = """
+HTML_SUMMARY_TEMPLATE: Final[
+    str
+] = """
 # {title}
 
 <details>
@@ -135,21 +140,17 @@ class VeristatInfo:
 
 
 def get_state_diff(value: str) -> float:
-    if value == 'N/A':
+    if value == "N/A":
         return 0.0
 
     matches = re.match(TOTAL_STATES_DIFF_REGEX, value)
     if not matches:
-        raise ValueError(
-            f"Failed to parse total states diff field value '{value}'"
-        )
+        raise ValueError(f"Failed to parse total states diff field value '{value}'")
 
     if percentage_diff := matches.group("percentage_diff"):
         return float(percentage_diff)
 
-    raise ValueError(
-        f"Invalid {VeristatFields.TOTAL_STATES_DIFF} field value: {value}"
-    )
+    raise ValueError(f"Invalid {VeristatFields.TOTAL_STATES_DIFF} field value: {value}")
 
 
 def parse_table(csv_file):
@@ -190,18 +191,16 @@ def parse_table(csv_file):
         if not add:
             continue
 
-        table.append([
-            record[VeristatFields.FILE_NAME],
-            record[VeristatFields.PROG_NAME],
-            verdict,
-            f"{diff:+.2f} %"
-        ])
+        table.append(
+            [
+                record[VeristatFields.FILE_NAME],
+                record[VeristatFields.PROG_NAME],
+                verdict,
+                f"{diff:+.2f} %",
+            ]
+        )
 
-    return VeristatInfo(
-        table=table,
-        changes=changes,
-        new_failures=new_failures
-    )
+    return VeristatInfo(table=table, changes=changes, new_failures=new_failures)
 
 
 def github_markup_decorate(input_str: str) -> str:
@@ -219,8 +218,7 @@ def format_table(headers: List[str], rows: List[List[str]]) -> str:
     # Row template string in the following format:
     # "{0:8}|{1:10}|{2:15}|{3:7}|{4:10}"
     row_template = "|".join(
-        f"{{{idx}:{width}}}"
-        for idx, width in enumerate(column_width)
+        f"{{{idx}:{width}}}" for idx, width in enumerate(column_width)
     )
     row_template_nl = f"|{row_template}|\n"
 
@@ -237,10 +235,7 @@ def format_table(headers: List[str], rows: List[List[str]]) -> str:
         return out.getvalue()
 
 
-def main(
-    compare_csv_filename: os.PathLike,
-    output_filename: os.PathLike
-) -> None:
+def main(compare_csv_filename: os.PathLike, output_filename: os.PathLike) -> None:
     with open(compare_csv_filename, newline="", encoding="utf-8") as csv_file:
         veristat_results = parse_table(csv_file)
 
