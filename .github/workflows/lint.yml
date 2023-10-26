@@ -20,3 +20,23 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         env:
           SHELLCHECK_OPTS: --severity=warning --exclude=SC1091
+
+  validate_matrix:
+    if: ${{ github.repository == 'kernel-patches/vmtest' }}
+    name: Validate matrix.py
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REPOSITORY_OWNER: ${{ matrix.owner }}
+      GITHUB_REPOSITORY: ${{ matrix.repository }}
+      GITHUB_OUTPUT: /dev/stdout
+    strategy:
+      matrix:
+        owner: ['kernel-patches', 'foo']
+        repository: ['bpf', 'vmtest', 'bar']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: run script
+        run: |
+          python3 .github/scripts/matrix.py
+
