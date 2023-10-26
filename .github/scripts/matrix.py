@@ -63,6 +63,7 @@ matrix = [
         "arch": Arch.X86_64.value,
         "toolchain": "gcc",
         "llvm-version": "16",
+        "run_veristat": True,
     },
     {
         "kernel": "LATEST",
@@ -105,6 +106,15 @@ for idx in range(len(matrix) - 1, -1, -1):
     else:
         matrix[idx]["toolchain_full"] = "llvm-" + matrix[idx]["llvm-version"]
 
+    # Set run_veristat to false by default.
+    matrix[idx]["run_veristat"] = matrix[idx].get("run_veristat", False)
+    # Feel in the tests
+    matrix[idx]["tests"] = {"include": [
+            generate_test_config(test)
+            for test in get_tests(matrix[idx])
+        ]
+    }
+
 # Only a few repository within "kernel-patches" use self-hosted runners.
 if (
     os.environ["GITHUB_REPOSITORY_OWNER"] != "kernel-patches"
@@ -124,29 +134,6 @@ else:
     for idx in range(len(matrix) - 1, -1, -1):
         matrix[idx]["runs_on"].extend(["self-hosted", matrix[idx]["arch"]])
 
-build_matrix = {"include": deepcopy(matrix)}
-# include test configs directly with the build config
-for config in build_matrix["include"]:
-    config["tests"] = {"include": [
-        generate_test_config(test)
-        for test in get_tests(config)
-    ]}
+build_matrix = {"include": matrix}
 
 set_output("build_matrix", dumps(build_matrix))
-
-test_matrix = {
-    "include": [
-        {**config, **generate_test_config(test)}
-        for config in matrix
-        for test in get_tests(config)
-    ]
-}
-set_output("test_matrix", dumps(test_matrix))
-
-veristat_runs_on = next(
-    x["runs_on"]
-    for x in matrix
-    if x["arch"] == os.environ["veristat_arch"]
-    and x["toolchain"] == os.environ["veristat_toolchain"]
-)
-set_output("veristat_runs_on", veristat_runs_on)
