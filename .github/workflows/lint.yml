@@ -21,6 +21,19 @@ jobs:
         env:
           SHELLCHECK_OPTS: --severity=warning --exclude=SC1091
 
+  # Ensure some consistency in the formatting.
+  lint:
+    if: ${{ github.repository == 'kernel-patches/vmtest' }}
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Run black
+        uses: psf/black@stable
+        with:
+          src: ./.github/scripts
+
   validate_matrix:
     if: ${{ github.repository == 'kernel-patches/vmtest' }}
     name: Validate matrix.py

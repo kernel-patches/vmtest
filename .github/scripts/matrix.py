@@ -109,10 +109,8 @@ for idx in range(len(matrix) - 1, -1, -1):
     # Set run_veristat to false by default.
     matrix[idx]["run_veristat"] = matrix[idx].get("run_veristat", False)
     # Feel in the tests
-    matrix[idx]["tests"] = {"include": [
-            generate_test_config(test)
-            for test in get_tests(matrix[idx])
-        ]
+    matrix[idx]["tests"] = {
+        "include": [generate_test_config(test) for test in get_tests(matrix[idx])]
     }
 
 # Only a few repository within "kernel-patches" use self-hosted runners.
