@@ -48,5 +48,7 @@ jobs:
       kernel: ${{ matrix.kernel }}
       tests: ${{ toJSON(matrix.tests) }}
       run_veristat: ${{ matrix.run_veristat }}
+      # We only run tests on pull requests.
+      run_tests: ${{ github.event_name != 'push' }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
