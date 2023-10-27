@@ -50,5 +50,7 @@ jobs:
       run_veristat: ${{ matrix.run_veristat }}
       # We only run tests on pull requests.
       run_tests: ${{ github.event_name != 'push' }}
+      # Download sources
+      download_sources: ${{ github.repository == 'kernel-patches/vmtest' }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
