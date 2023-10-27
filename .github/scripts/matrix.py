@@ -51,7 +51,7 @@ def get_tests(config):
         "test_maps",
         "test_verifier",
     ]
-    if config.get("parallel_tests", True):
+    if config.get("parallel_tests", False):
         return tests
     return [test for test in tests if not test.endswith("parallel")]
 
@@ -64,6 +64,7 @@ matrix = [
         "toolchain": "gcc",
         "llvm-version": "16",
         "run_veristat": True,
+        "parallel_tests": True,
     },
     {
         "kernel": "LATEST",
@@ -92,7 +93,6 @@ matrix = [
         "arch": Arch.S390X.value,
         "toolchain": "gcc",
         "llvm-version": "16",
-        "parallel_tests": False,
     },
 ]
 self_hosted_repos = [
