@@ -34,7 +34,6 @@ on:
 
 jobs:
   test:
-    if: ${{ github.event_name != 'push' }}
     name: ${{ inputs.test }} on ${{ inputs.arch }} with ${{ inputs.toolchain_full }}
     runs-on: ${{ fromJSON(inputs.runs_on) }}
     timeout-minutes: 100
