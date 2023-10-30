@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from copy import deepcopy
 from json import dumps
 from enum import Enum
 import os
@@ -74,6 +73,7 @@ matrix = [
         "arch": Arch.X86_64.value,
         "toolchain": "llvm",
         "llvm-version": "17",
+        "build_release": True,
     },
     {
         "kernel": "LATEST",
@@ -81,6 +81,7 @@ matrix = [
         "arch": Arch.X86_64.value,
         "toolchain": "llvm",
         "llvm-version": "18",
+        "build_release": True,
     },
     {
         "kernel": "LATEST",
@@ -117,6 +118,8 @@ for idx in range(len(matrix) - 1, -1, -1):
 
     # Set run_veristat to false by default.
     matrix[idx]["run_veristat"] = matrix[idx].get("run_veristat", False)
+    # Set build_release to false by default.
+    matrix[idx]["build_release"] = matrix[idx].get("build_release", False)
     # Feel in the tests
     matrix[idx]["tests"] = {
         "include": [generate_test_config(test) for test in get_tests(matrix[idx])]

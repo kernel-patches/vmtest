@@ -33,11 +33,15 @@ on:
         type: boolean
         description: Whether to download the linux sources into the working directory.
         default: false
+      release:
+        required: false
+        type: boolean
+        description: Build selftest with -O2 optimization
+        default: false
 
- 
 jobs:
   build:
-    name: build for ${{ inputs.arch }} with ${{ inputs.toolchain_full }}
+    name: build for ${{ inputs.arch }} with ${{ inputs.toolchain_full }} ${{ inputs.release && 'and -O2 optimization' || '' }}
     runs-on: ${{ fromJSON(inputs.runs_on) }}
     timeout-minutes: 100
     env:
@@ -103,6 +107,11 @@ jobs:
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
           llvm-version: ${{ inputs.llvm-version }}
+        env:
+          # RELEASE= disables all optimizaions
+          # RELEASE=0 adds -O0 make flag
+          # RELEASE=1 adds -O2 make flag
+          RELEASE: ${{ inputs.release && '1' || '' }}
       - if: ${{ github.event_name != 'push' }}
         name: Build samples
         uses: libbpf/ci/build-samples@main

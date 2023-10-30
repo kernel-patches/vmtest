@@ -44,6 +44,11 @@ on:
         type: boolean
         description: Whether to download the linux sources into the working directory.
         default: false
+      build_release:
+        required: true
+        type: boolean
+        description: Build selftests with -O2 optimization in addition to non-optimized build.
+        default: false
     secrets:
       AWS_ROLE_ARN:
         required: true
@@ -60,7 +65,18 @@ jobs:
       llvm-version: ${{ inputs.llvm-version }}
       kernel: ${{ inputs.kernel }}
       download_sources: ${{ inputs.download_sources }}
-
+  build-release:
+    if: ${{ inputs.build_release }}
+    uses: ./.github/workflows/kernel-build.yml
+    with:
+      arch: ${{ inputs.arch }}
+      toolchain_full: ${{ inputs.toolchain_full }}
+      toolchain: ${{ inputs.toolchain }}
+      runs_on: ${{ inputs.runs_on }}
+      llvm-version: ${{ inputs.llvm-version }}
+      kernel: ${{ inputs.kernel }}
+      download_sources: ${{ inputs.download_sources }}
+      release: true
   test:
     if: ${{ inputs.run_tests }}
     uses: ./.github/workflows/kernel-test.yml
