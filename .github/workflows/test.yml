@@ -52,5 +52,6 @@ jobs:
       run_tests: ${{ github.event_name != 'push' }}
       # Download sources
       download_sources: ${{ github.repository == 'kernel-patches/vmtest' }}
+      build_release: ${{ matrix.build_release }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
