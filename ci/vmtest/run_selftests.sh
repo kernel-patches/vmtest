@@ -133,7 +133,8 @@ run_veristat_helper() {
     mkdir -p ${OUTPUT_DIR}
     pushd "${VERISTAT_OBJECTS_DIR}"
 
-    "${BPF_SELFTESTS_DIR}/veristat" -o csv -q -e file,prog,verdict,states ${VERISTAT_OBJECTS_GLOB} > \
+    "${BPF_SELFTESTS_DIR}/veristat" -o csv -q -e file,prog,verdict,states \
+      -f "@${VERISTAT_CFG_FILE}" ${VERISTAT_OBJECTS_GLOB} > \
       "${OUTPUT_DIR}/${VERISTAT_OUTPUT}"
 
     echo "run_veristat_${mode}:$?" >> ${STATUS_FILE}
