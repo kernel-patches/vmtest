@@ -101,6 +101,10 @@ test_progs_no_alu32_parallel() {
   test_progs_helper "-no_alu32" "-j"
 }
 
+test_progs_cpuv4() {
+  test_progs_helper "-cpuv4" ""
+}
+
 test_maps() {
   foldable start test_maps "Testing test_maps"
   taskset 0xF ./test_maps && true
@@ -179,6 +183,7 @@ read_test_names "$@"
 if [ ${#TEST_NAMES[@]} -eq 0 ]; then
 	test_progs
 	test_progs_no_alu32
+	test_progs_cpuv4
 	test_maps
 	test_verifier
 else

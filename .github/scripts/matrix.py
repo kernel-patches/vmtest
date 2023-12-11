@@ -51,6 +51,8 @@ def get_tests(config):
         "test_maps",
         "test_verifier",
     ]
+    if int(config.get("llvm-version", 0)) >= 18:
+        tests.append("test_progs_cpuv4")
     if config.get("parallel_tests", False):
         return tests
     return [test for test in tests if not test.endswith("parallel")]
