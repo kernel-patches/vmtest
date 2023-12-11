@@ -62,7 +62,7 @@ matrix = [
         "runs_on": [],
         "arch": Arch.X86_64.value,
         "toolchain": "gcc",
-        "llvm-version": "16",
+        "llvm-version": "17",
         "run_veristat": True,
         "parallel_tests": True,
     },
@@ -71,14 +71,21 @@ matrix = [
         "runs_on": [],
         "arch": Arch.X86_64.value,
         "toolchain": "llvm",
-        "llvm-version": "16",
+        "llvm-version": "17",
+    },
+    {
+        "kernel": "LATEST",
+        "runs_on": [],
+        "arch": Arch.X86_64.value,
+        "toolchain": "llvm",
+        "llvm-version": "18",
     },
     {
         "kernel": "LATEST",
         "runs_on": [],
         "arch": Arch.AARCH64.value,
         "toolchain": "gcc",
-        "llvm-version": "16",
+        "llvm-version": "17",
     },
     # {
     #     "kernel": "LATEST",
@@ -92,7 +99,7 @@ matrix = [
         "runs_on": [],
         "arch": Arch.S390X.value,
         "toolchain": "gcc",
-        "llvm-version": "16",
+        "llvm-version": "17",
     },
 ]
 self_hosted_repos = [
