@@ -41,7 +41,7 @@ on:
 
 jobs:
   build:
-    name: build for ${{ inputs.arch }} with ${{ inputs.toolchain_full }} ${{ inputs.release && 'and -O2 optimization' || '' }}
+    name: build for ${{ inputs.arch }} with ${{ inputs.toolchain_full }}${{ inputs.release && ' and -O2 optimization' || '' }}
     runs-on: ${{ fromJSON(inputs.runs_on) }}
     timeout-minutes: 100
     env:
@@ -133,6 +133,6 @@ jobs:
           rm -rf "${KBUILD_OUTPUT}"
       - uses: actions/upload-artifact@v3
         with:
-          name: vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}
+          name: vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}${{ inputs.release && '-release' || '' }}
           if-no-files-found: error
           path: vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst
