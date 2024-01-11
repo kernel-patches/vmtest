@@ -17,8 +17,9 @@ ARCH=$(uname -m)
 STATUS_FILE=/mnt/vmtest/exitstatus
 OUTPUT_DIR=/mnt/vmtest
 
-BPF_SELFTESTS_DIR="/${PROJECT_NAME}/selftests/bpf"
-VMTEST_CONFIGS_PATH="/${PROJECT_NAME}/vmtest/configs"
+WORKING_DIR="/${PROJECT_NAME}"
+BPF_SELFTESTS_DIR="${WORKING_DIR}/selftests/bpf"
+VMTEST_CONFIGS_PATH="${WORKING_DIR}/ci/vmtest/configs"
 
 read_lists() {
 	(for path in "$@"; do
