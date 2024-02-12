@@ -103,6 +103,7 @@ jobs:
       - name: Build selftests
         uses: libbpf/ci/build-selftests@main
         with:
+          arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
@@ -116,6 +117,7 @@ jobs:
         name: Build samples
         uses: libbpf/ci/build-samples@main
         with:
+          arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           max-make-jobs: 32
