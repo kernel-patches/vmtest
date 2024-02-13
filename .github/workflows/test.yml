@@ -22,7 +22,7 @@ jobs:
     outputs:
       build-matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - id: set-matrix-impl
         run: |
           python3 .github/scripts/matrix.py

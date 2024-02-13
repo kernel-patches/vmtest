@@ -50,7 +50,7 @@ jobs:
         REPO_PATH: ""
         KBUILD_OUTPUT: kbuild-output/
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         # We fetch an actual bit of history here to facilitate incremental
         # builds (which may check out some earlier upstream change).
         with:
@@ -72,7 +72,7 @@ jobs:
         run: |
           bash .github/scripts/get-commit-metadata.sh
       - name: Pull recent KBUILD_OUTPUT contents
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.KBUILD_OUTPUT }}
           key: kbuild-output-${{ inputs.arch }}-${{ inputs.toolchain_full }}-${{ steps.get-commit-metadata.outputs.branch }}-${{ steps.get-commit-metadata.outputs.timestamp }}-${{ steps.get-commit-metadata.outputs.commit }}
@@ -134,7 +134,7 @@ jobs:
           # Only on pushed changes are build artifacts actually cached, because
           # of github.com/actions/cache's cache isolation logic.
           rm -rf "${KBUILD_OUTPUT}"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}${{ inputs.release && '-release' || '' }}
           if-no-files-found: error
