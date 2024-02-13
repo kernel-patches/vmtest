@@ -5,6 +5,28 @@ set -eux
 arch="${1}"
 toolchain="${2}"
 
+# Convert a platform (as returned by uname -m) to the kernel
+# arch (as expected by ARCH= env).
+platform_to_kernel_arch() {
+  case $1 in
+    s390x)
+      echo "s390"
+      ;;
+    aarch64)
+      echo "arm64"
+      ;;
+    riscv64)
+      echo "riscv"
+      ;;
+    x86_64)
+      echo "x86"
+      ;;
+    *)
+      echo "$1"
+      ;;
+  esac
+}
+
 # Remove intermediate object files that we have no use for. Ideally
 # we'd just exclude them from tar below, but it does not provide
 # options to express the precise constraints.
@@ -14,7 +36,7 @@ find selftests/ -name "*.o" -a ! -name "*.bpf.o" -print0 | \
 # Strip debug information, which is excessively large (consuming
 # bandwidth) while not actually being used (the kernel does not use
 # DWARF to symbolize stacktraces).
-strip --strip-debug "${KBUILD_OUTPUT}"/vmlinux
+"${arch}"-linux-gnu-strip --strip-debug "${KBUILD_OUTPUT}"/vmlinux
 
 additional_file_list=()
 if [ "${GITHUB_REPOSITORY}" == "kernel-patches/vmtest" ]; then
@@ -29,7 +51,7 @@ if [ "${GITHUB_REPOSITORY}" == "kernel-patches/vmtest" ]; then
   )
 fi
 
-image_name=$(make -s image_name)
+image_name=$(make ARCH="$(platform_to_kernel_arch "${arch}")" -s image_name)
 
 # zstd is installed by default in the runner images.
 tar -cf - \
