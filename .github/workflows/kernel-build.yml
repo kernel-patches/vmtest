@@ -91,6 +91,7 @@ jobs:
       - name: Setup build environment
         uses: libbpf/ci/setup-build-env@main
         with:
+          arch: ${{ inputs.arch }}
           llvm-version: ${{ inputs.llvm-version }}
       - name: Build kernel image
         uses: libbpf/ci/build-linux@main
