@@ -1,0 +1,14 @@
+diff --git a/tools/testing/selftests/bpf/Makefile b/tools/testing/selftests/bpf/Makefile
+index a38a3001527c..a403a9d5c529 100644
+--- a/tools/testing/selftests/bpf/Makefile
++++ b/tools/testing/selftests/bpf/Makefile
+@@ -171,7 +171,8 @@ INCLUDE_DIR := $(SCRATCH_DIR)/include
+ BPFOBJ := $(BUILD_DIR)/libbpf/libbpf.a
+ ifneq ($(CROSS_COMPILE),)
+ HOST_BUILD_DIR		:= $(BUILD_DIR)/host
+-HOST_SCRATCH_DIR	:= $(OUTPUT)/host-tools
++#HOST_SCRATCH_DIR	:= $(OUTPUT)/host-tools
++HOST_SCRATCH_DIR	:= $(SCRATCH_DIR)
+ HOST_INCLUDE_DIR	:= $(HOST_SCRATCH_DIR)/include
+ else
+ HOST_BUILD_DIR		:= $(BUILD_DIR)
