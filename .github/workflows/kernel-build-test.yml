@@ -19,6 +19,10 @@ on:
         required: true
         type: string
         description: The runners to run the test on. This is a json string representing an array of labels.
+      build_runs_on:
+        required: true
+        type: string
+        description: The runners to run the builds on. This is a json string representing an array of labels.
       llvm-version:
         required: true
         type: string
@@ -61,7 +65,7 @@ jobs:
       arch: ${{ inputs.arch }}
       toolchain_full: ${{ inputs.toolchain_full }}
       toolchain: ${{ inputs.toolchain }}
-      runs_on: ${{ inputs.runs_on }}
+      runs_on: ${{ inputs.build_runs_on }}
       llvm-version: ${{ inputs.llvm-version }}
       kernel: ${{ inputs.kernel }}
       download_sources: ${{ inputs.download_sources }}
