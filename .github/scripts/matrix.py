@@ -75,6 +75,16 @@ class BuildConfig:
         return [DEFAULT_RUNNER]
 
     @property
+    def build_runs_on(self) -> List[str]:
+        if is_managed_repo():
+            # Build s390x on x86_64
+            return [
+                "self-hosted",
+                self.arch.value == "s390x" and Arch.X86_64.value or self.arch.value,
+            ]
+        return [DEFAULT_RUNNER]
+
+    @property
     def tests(self) -> Dict[str, Any]:
         tests_list = [
             "test_progs",
@@ -103,6 +113,7 @@ class BuildConfig:
             "build_release": self.build_release,
             "runs_on": self.runs_on,
             "tests": self.tests,
+            "build_runs_on": self.build_runs_on,
         }
 
 
