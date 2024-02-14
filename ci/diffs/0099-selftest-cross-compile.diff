@@ -1,14 +1,13 @@
 diff --git a/tools/testing/selftests/bpf/Makefile b/tools/testing/selftests/bpf/Makefile
-index a38a3001527c..a403a9d5c529 100644
+index a38a3001527c..af68528cc944 100644
 --- a/tools/testing/selftests/bpf/Makefile
 +++ b/tools/testing/selftests/bpf/Makefile
-@@ -171,7 +171,8 @@ INCLUDE_DIR := $(SCRATCH_DIR)/include
- BPFOBJ := $(BUILD_DIR)/libbpf/libbpf.a
- ifneq ($(CROSS_COMPILE),)
- HOST_BUILD_DIR		:= $(BUILD_DIR)/host
--HOST_SCRATCH_DIR	:= $(OUTPUT)/host-tools
-+#HOST_SCRATCH_DIR	:= $(OUTPUT)/host-tools
-+HOST_SCRATCH_DIR	:= $(SCRATCH_DIR)
- HOST_INCLUDE_DIR	:= $(HOST_SCRATCH_DIR)/include
- else
- HOST_BUILD_DIR		:= $(BUILD_DIR)
+@@ -304,7 +304,7 @@ $(OUTPUT)/test_maps: $(TESTING_HELPERS)
+ $(OUTPUT)/test_verifier: $(TESTING_HELPERS) $(CAP_HELPERS) $(UNPRIV_HELPERS)
+ $(OUTPUT)/xsk.o: $(BPFOBJ)
+ 
+-BPFTOOL ?= $(DEFAULT_BPFTOOL)
++BPFTOOL ?= $(TRUNNER_BPFTOOL)
+ $(DEFAULT_BPFTOOL): $(wildcard $(BPFTOOLDIR)/*.[ch] $(BPFTOOLDIR)/Makefile)    \
+ 		    $(HOST_BPFOBJ) | $(HOST_BUILD_DIR)/bpftool
+ 	$(Q)$(MAKE) $(submake_extras)  -C $(BPFTOOLDIR)			       \
