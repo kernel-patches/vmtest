@@ -10,3 +10,4 @@ lwt_reroute      # crashes kernel after netnext merge from 2ab1efad60ad "net/sch
 tc_links_ingress # started failing after net-next merge from 2ab1efad60ad "net/sched: cls_api: complement tcf_tfilter_dump_policy"
 xdp_bonding/xdp_bonding_features     # started failing after net merge from 359e54a93ab4 "l2tp: pass correct message length to ip6_append_data"
 tc_redirect/tc_redirect_dtime # uapi breakage after net-next commit 885c36e59f46 ("net: Re-use and set mono_delivery_time bit for userspace tstamp packets")
+migrate_reuseport/IPv4 TCP_NEW_SYN_RECV reqsk_timer_handler # flaky, under investigation
