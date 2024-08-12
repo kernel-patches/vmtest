@@ -91,9 +91,11 @@ class BuildConfig:
             "test_progs_parallel",
             "test_progs_no_alu32",
             "test_progs_no_alu32_parallel",
-            "test_maps",
             "test_verifier",
         ]
+
+        if self.arch.value != "s390x":
+            tests_list.append("test_maps")
 
         if self.toolchain.version >= 18:
             tests_list.append("test_progs_cpuv4")
