@@ -21,6 +21,7 @@ OUTPUT_DIR=/mnt/vmtest
 WORKING_DIR="/${PROJECT_NAME}"
 BPF_SELFTESTS_DIR="${WORKING_DIR}/selftests/bpf"
 VMTEST_CONFIGS_PATH="${WORKING_DIR}/ci/vmtest/configs"
+PKG_CONFIG=pkg-config
 
 read_lists() {
 	(for path in "$@"; do
@@ -43,6 +44,16 @@ ALLOWLIST=$(read_lists \
 	"$VMTEST_CONFIGS_PATH/ALLOWLIST" \
 	"$VMTEST_CONFIGS_PATH/ALLOWLIST.${ARCH}" \
 )
+
+TMONLIST=""
+if ${PKG_CONFIG} --exists libpcap 2>/dev/null; then
+    TMONLIST=$(read_lists \
+	           "$BPF_SELFTESTS_DIR/TMONLIST" \
+	           "$BPF_SELFTESTS_DIR/TMONLIST.${ARCH}" \
+	           "$VMTEST_CONFIGS_PATH/TMONLIST" \
+	           "$VMTEST_CONFIGS_PATH/TMONLIST.${ARCH}" \
+            )
+fi
 
 declare -a TEST_NAMES=()
 
@@ -83,7 +94,7 @@ test_progs_helper() {
   # "&& true" does not change the return code (it is not executed
   # if the Python script fails), but it prevents exiting on a
   # failure due to the "set -e".
-  ./${selftest} ${args} ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} --json-summary "${json_file}" && true
+  ./${selftest} ${args} ${DENYLIST:+-d"$DENYLIST"} ${ALLOWLIST:+-a"$ALLOWLIST"} ${TMONLIST:+-m"$TMONLIST"} --json-summary "${json_file}" && true
   echo "${selftest}:$?" >>"${STATUS_FILE}"
   foldable end ${selftest}
 }
@@ -175,6 +186,7 @@ foldable end kernel_config
 
 echo "DENYLIST: ${DENYLIST}"
 echo "ALLOWLIST: ${ALLOWLIST}"
+echo "TMONLIST: ${TMONLIST}"
 
 cd ${PROJECT_NAME}/selftests/bpf
 
