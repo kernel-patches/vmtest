@@ -22,6 +22,7 @@ WORKING_DIR="/${PROJECT_NAME}"
 BPF_SELFTESTS_DIR="${WORKING_DIR}/selftests/bpf"
 VMTEST_CONFIGS_PATH="${WORKING_DIR}/ci/vmtest/configs"
 PKG_CONFIG=pkg-config
+TMON_DIR=/tmp/tmon_pcap
 
 read_lists() {
 	(for path in "$@"; do
@@ -190,6 +191,10 @@ echo "TMONLIST: ${TMONLIST}"
 
 cd ${PROJECT_NAME}/selftests/bpf
 
+if [ -d "${TMON_DIR}" ]; then
+    rm -rf "${TMON_DIR}"
+fi
+
 # populate TEST_NAMES
 read_test_names "$@"
 # if we don't have any test name provided to the script, we run all tests.
@@ -205,4 +210,9 @@ else
 	for test_name in "${TEST_NAMES[@]}"; do
 		"${test_name}"
 	done
+fi
+
+if [ -d "${TMON_DIR}" ]; then
+    rm -rf "${OUTPUT_DIR}/tmon-logs"
+    mv "${TMON_DIR}" "${OUTPUT_DIR}/tmon-logs"
 fi
