@@ -17,6 +17,7 @@ MANAGED_REPOS: Final[Set[str]] = {
 # `./test_verifier: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.34' not found (required by ./test_verifier)`
 DEFAULT_RUNNER: Final[str] = "ubuntu-20.04"
 DEFAULT_LLVM_VERSION: Final[int] = 17
+DEFAULT_SELF_HOSTED_RUNNER_TAGS: Final[List[str]] = ["self-hosted", "docker-main"]
 
 
 class Arch(str, Enum):
@@ -71,15 +72,14 @@ class BuildConfig:
     @property
     def runs_on(self) -> List[str]:
         if is_managed_repo():
-            return ["self-hosted", self.arch.value]
+            return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [self.arch.value]
         return [DEFAULT_RUNNER]
 
     @property
     def build_runs_on(self) -> List[str]:
         if is_managed_repo():
             # Build s390x on x86_64
-            return [
-                "self-hosted",
+            return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [
                 self.arch.value == "s390x" and Arch.X86_64.value or self.arch.value,
             ]
         return [DEFAULT_RUNNER]
