@@ -159,6 +159,7 @@ if __name__ == "__main__":
             toolchain=Toolchain(compiler=Compiler.GCC, version=DEFAULT_LLVM_VERSION),
             run_veristat=True,
             parallel_tests=True,
+            build_release=True,
         ),
         BuildConfig(
             arch=Arch.X86_64,
