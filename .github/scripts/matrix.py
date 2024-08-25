@@ -12,10 +12,7 @@ MANAGED_REPOS: Final[Set[str]] = {
     f"{MANAGED_OWNER}/bpf",
     f"{MANAGED_OWNER}/vmtest",
 }
-# We need to run on ubuntu 20.04 because our rootfs is based on debian buster and we
-# otherwise get library versioning issue such as
-# `./test_verifier: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.34' not found (required by ./test_verifier)`
-DEFAULT_RUNNER: Final[str] = "ubuntu-20.04"
+DEFAULT_RUNNER: Final[str] = "ubuntu-24.04"
 DEFAULT_LLVM_VERSION: Final[int] = 17
 DEFAULT_SELF_HOSTED_RUNNER_TAGS: Final[List[str]] = ["self-hosted", "docker-noble-main"]
 
