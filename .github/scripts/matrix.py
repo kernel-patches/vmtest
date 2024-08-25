@@ -72,6 +72,11 @@ class BuildConfig:
     @property
     def runs_on(self) -> List[str]:
         if is_managed_repo():
+            if self.arch.value == "s390x":
+                tags = DEFAULT_SELF_HOSTED_RUNNER_TAGS + [self.arch.value, "docker-noble-staging"]
+                tags.remove("docker-noble-main")
+                return tags
+
             return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [self.arch.value]
         return [DEFAULT_RUNNER]
 
