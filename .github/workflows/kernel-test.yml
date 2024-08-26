@@ -67,3 +67,4 @@ jobs:
           kernel-root: '.'
           max-cpu: 8
           kernel-test: ${{ inputs.test }}
+          toolchain: ${{ inputs.toolchain_full }}
