@@ -94,6 +94,14 @@ jobs:
           arch: ${{ inputs.arch }}
           llvm-version: ${{ inputs.llvm-version }}
           pahole: c2f89dab3f2b0ebb53bab3ed8be32f41cb743c37
+      - name: Print toolchain version used
+        shell: bash
+        run: |
+          TOOLCHAIN=${{ inputs.toolchain }}
+          if [ $TOOLCHAIN = "llvm" ]; then
+            TOOLCHAIN="clang-${{ inputs.llvm-version }}"
+          fi
+          ${TOOLCHAIN} --version
       - name: Build kernel image
         uses: libbpf/ci/build-linux@main
         with:
