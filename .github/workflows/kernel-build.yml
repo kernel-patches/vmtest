@@ -84,12 +84,6 @@ jobs:
         shell: bash
         run: |
           bash .github/scripts/prepare-incremental-builds.sh ${{ steps.get-commit-metadata.outputs.commit }}
-      - name: Prepare patches in ./ci/diffs
-        shell: bash
-        run: |
-          git merge-base --is-ancestor affb32e4f05a $(git rev-parse --abbrev-ref HEAD) \
-              && rm -f ./ci/diffs/0299-selftests-bpf-Fix-uprobe-consumer-test.patch \
-              || true
       - uses: libbpf/ci/patch-kernel@main
         with:
           patches-root: '${{ github.workspace }}/ci/diffs'
