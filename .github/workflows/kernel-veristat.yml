@@ -71,7 +71,7 @@ jobs:
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
       - name: Run veristat
-        uses: libbpf/ci/run-vmtest@main
+        uses: libbpf/ci/run-vmtest@v1
         with:
           arch: x86_64
           img: '/tmp/root.img'
