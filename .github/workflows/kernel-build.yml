@@ -63,7 +63,7 @@ jobs:
           fetch-depth: 50
       - if: ${{ inputs.download_sources }}
         name: Download bpf-next tree
-        uses: libbpf/ci/get-linux-source@main
+        uses: libbpf/ci/get-linux-source@v1
         with:
           dest: '.kernel'
       - if: ${{ inputs.download_sources }}
@@ -73,25 +73,25 @@ jobs:
           rm -rf .kernel/.git
           cp -rf .kernel/. .
           rm -rf .kernel
-      - uses: theihor/libbpf-ci/prepare-incremental-build@prepare-incremental-build-action
+      - uses: libbpf/ci/prepare-incremental-build@v1
         with:
           repo-root: ${{ env.REPO_ROOT }}
           base-branch: ${{ env.BASE_BRANCH }}
           arch: ${{ inputs.arch }}
           toolchain_full: ${{ inputs.toolchain_full }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
-      - uses: libbpf/ci/patch-kernel@main
+      - uses: libbpf/ci/patch-kernel@v1
         with:
           patches-root: '${{ github.workspace }}/ci/diffs'
           repo-root: '${{ github.workspace }}'
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@main
+        uses: libbpf/ci/setup-build-env@v1
         with:
           arch: ${{ inputs.arch }}
           llvm-version: ${{ inputs.llvm-version }}
           pahole: c2f89dab3f2b0ebb53bab3ed8be32f41cb743c37
       - name: Build kernel image
-        uses: libbpf/ci/build-linux@main
+        uses: libbpf/ci/build-linux@v1
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
@@ -99,7 +99,7 @@ jobs:
           max-make-jobs: 32
           llvm-version: ${{ inputs.llvm-version }}
       - name: Build selftests
-        uses: libbpf/ci/build-selftests@main
+        uses: libbpf/ci/build-selftests@v1
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
@@ -113,7 +113,7 @@ jobs:
           RELEASE: ${{ inputs.release && '1' || '' }}
       - if: ${{ github.event_name != 'push' }}
         name: Build samples
-        uses: libbpf/ci/build-samples@main
+        uses: libbpf/ci/build-samples@v1
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
