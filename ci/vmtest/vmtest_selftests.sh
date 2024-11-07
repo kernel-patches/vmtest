@@ -13,7 +13,7 @@ set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/helpers.sh"
 
 ARCH=$(uname -m)
-DEPLOYMENT=$(if [[ "$GITHUB_REPOSITORY" == *"-rc" ]]; then echo "rc"; else echo "prod"; fi)
+DEPLOYMENT=$(if [[ "$GITHUB_REPOSITORY" == "kernel-patches/bpf" ]]; then echo "prod"; else echo "rc"; fi)
 
 STATUS_FILE=/mnt/vmtest/exitstatus
 OUTPUT_DIR=/mnt/vmtest
@@ -21,14 +21,6 @@ OUTPUT_DIR=/mnt/vmtest
 WORKING_DIR="/${PROJECT_NAME}"
 BPF_SELFTESTS_DIR="${WORKING_DIR}/selftests/bpf"
 VMTEST_CONFIGS_PATH="${WORKING_DIR}/ci/vmtest/configs"
-
-read_lists() {
-	(for path in "$@"; do
-		if [[ -s "$path" ]]; then
-			cat "$path"
-		fi;
-	done) | cut -d'#' -f1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | tr -s '\n' ','
-}
 
 DENYLIST=$(read_lists \
 	"$BPF_SELFTESTS_DIR/DENYLIST" \
