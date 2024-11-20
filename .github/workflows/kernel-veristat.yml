@@ -71,10 +71,9 @@ jobs:
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
       - name: Run veristat
-        uses: libbpf/ci/run-vmtest@v1
+        uses: libbpf/ci/run-vmtest@v2
         with:
           arch: x86_64
-          img: '/tmp/root.img'
           vmlinuz: '${{ github.workspace }}/vmlinuz'
           kernel-root: '.'
           max-cpu: 8
