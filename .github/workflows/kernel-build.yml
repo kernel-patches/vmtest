@@ -67,7 +67,7 @@ jobs:
         with:
           dest: '.kernel'
       - if: ${{ env.CACHED_KERNEL_BUILD }}
-        uses: libbpf/ci/prepare-incremental-build@v1
+        uses: libbpf/ci/prepare-incremental-build@v2
         with:
           repo-root: ${{ inputs.download_sources && '.kernel' || env.REPO_ROOT }}
           base-branch: >-
@@ -92,7 +92,7 @@ jobs:
           patches-root: '${{ github.workspace }}/ci/diffs'
           repo-root: ${{ env.REPO_ROOT }}
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@v1
+        uses: libbpf/ci/setup-build-env@v2
         with:
           arch: ${{ inputs.arch }}
           llvm-version: ${{ inputs.llvm-version }}
@@ -106,7 +106,7 @@ jobs:
           fi
           ${TOOLCHAIN} --version
       - name: Build kernel image
-        uses: libbpf/ci/build-linux@v1
+        uses: libbpf/ci/build-linux@v2
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
@@ -126,7 +126,7 @@ jobs:
 
       - if: ${{ env.BUILD_SCHED_EXT_SELFTESTS }}
         name: Build selftests/sched_ext
-        uses: libbpf/ci/build-scx-selftests@v1
+        uses: libbpf/ci/build-scx-selftests@v2
         with:
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           repo-root: ${{ env.REPO_ROOT }}
@@ -136,7 +136,7 @@ jobs:
           max-make-jobs: 32
       - if: ${{ github.event_name != 'push' }}
         name: Build samples
-        uses: libbpf/ci/build-samples@v1
+        uses: libbpf/ci/build-samples@v2
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
@@ -145,7 +145,7 @@ jobs:
           llvm-version: ${{ inputs.llvm-version }}
       - name: Tar artifacts
         id: tar-artifacts
-        uses: libbpf/ci/tar-artifacts@v1
+        uses: libbpf/ci/tar-artifacts@v2
         env:
           ARCHIVE_BPF_SELFTESTS: 'true'
           ARCHIVE_MAKE_HELPERS: ${{ github.repository != 'kernel-patches/bpf' && 'true' || '' }}
