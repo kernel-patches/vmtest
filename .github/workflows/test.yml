@@ -23,6 +23,10 @@ jobs:
       build-matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            ci
       - id: set-matrix-impl
         run: |
           python3 .github/scripts/matrix.py
