@@ -6,6 +6,8 @@ on:
     branches:
       - bpf_base
       - bpf-next_base
+      - bpf-net_base
+      - for-next_base
 
 concurrency:
   group: ci-test-${{ github.ref_name }}
