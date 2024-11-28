@@ -98,6 +98,9 @@ class BuildConfig:
         if self.toolchain.version >= 18:
             tests_list.append("test_progs_cpuv4")
 
+        if self.arch in [Arch.X86_64, Arch.AARCH64]:
+            tests_list.append("sched_ext")
+
         if not self.parallel_tests:
             tests_list = [test for test in tests_list if not test.endswith("parallel")]
 
