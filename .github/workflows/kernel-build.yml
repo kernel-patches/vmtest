@@ -144,7 +144,7 @@ jobs:
           llvm-version: ${{ inputs.llvm-version }}
       - name: Tar artifacts
         id: tar-artifacts
-        uses: libbpf/ci/tar-artifacts@v2
+        uses: theihor/libbpf-ci/tar-artifacts@fix-rustc-cfg
         env:
           ARCHIVE_BPF_SELFTESTS: 'true'
           ARCHIVE_MAKE_HELPERS: ${{ github.repository != 'kernel-patches/bpf' && 'true' || '' }}
