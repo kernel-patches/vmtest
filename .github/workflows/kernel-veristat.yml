@@ -38,6 +38,8 @@ jobs:
       REPO_PATH: ""
       KBUILD_OUTPUT: kbuild-output/
       ARCH_AND_TOOL: ${{ inputs.arch }}-${{ inputs.toolchain }}
+      # Don't run meta's veristat from forked repos
+      RUN_VERISTAT_META: ${{ github.repository_owner == 'kernel-patches' && 'true' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -77,8 +79,7 @@ jobs:
           vmlinuz: '${{ github.workspace }}/vmlinuz'
           kernel-root: '.'
           max-cpu: 8
-          # Don't run meta's veristat from forked repo.
-          kernel-test: ${{ github.event.pull_request.head.repo.full_name == github.repository && 'run_veristat_kernel,run_veristat_meta' || 'run_veristat_kernel' }}
+          kernel-test: ${{ env.RUN_VERISTAT_META && 'run_veristat_kernel,run_veristat_meta' || 'run_veristat_kernel' }}
           output-dir: '${{ github.workspace }}'
 
       - name: Compare and save veristat.kernel.csv
@@ -88,7 +89,7 @@ jobs:
           baseline_name: ${{ env.ARCH_AND_TOOL}}-baseline-veristat-kernel
 
       - name: Compare and save veristat.meta.csv
-        if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ env.RUN_VERISTAT_META }}
         uses: ./.github/actions/veristat_baseline_compare
         with:
           veristat_output: veristat-meta
