@@ -88,7 +88,7 @@ jobs:
           baseline_name: ${{ env.ARCH_AND_TOOL}}-baseline-veristat-kernel
 
       - name: Compare and save veristat.meta.csv
-        if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         uses: ./.github/actions/veristat_baseline_compare
         with:
           veristat_output: veristat-meta
