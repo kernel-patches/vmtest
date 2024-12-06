@@ -100,9 +100,21 @@ jobs:
       continue_on_error: ${{ toJSON(matrix.continue_on_error) }}
       timeout_minutes: ${{ matrix.timeout_minutes }}
 
-  veristat:
+  veristat-kernel:
     if: ${{ inputs.run_veristat }}
-    uses: ./.github/workflows/kernel-veristat.yml
+    uses: ./.github/workflows/veristat-kernel.yml
+    needs: [build]
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      arch: ${{ inputs.arch }}
+      toolchain: ${{ inputs.toolchain }}
+      runs_on: ${{ inputs.runs_on }}
+
+  veristat-meta:
+    if: ${{ inputs.run_veristat && github.repository_owner == 'kernel-patches' }}
+    uses: ./.github/workflows/veristat-meta.yml
     needs: [build]
     permissions:
       id-token: write
