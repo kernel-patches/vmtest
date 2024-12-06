@@ -113,7 +113,8 @@ jobs:
       runs_on: ${{ inputs.runs_on }}
 
   veristat-meta:
-    if: ${{ inputs.run_veristat && github.repository_owner == 'kernel-patches' }}
+    # Check for vars.AWS_REGION is necessary to skip this job in case of a PR from a fork.
+    if: ${{ inputs.run_veristat && github.repository_owner == 'kernel-patches' && vars.AWS_REGION }}
     uses: ./.github/workflows/veristat-meta.yml
     needs: [build]
     permissions:
