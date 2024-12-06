@@ -147,7 +147,7 @@ jobs:
         uses: libbpf/ci/tar-artifacts@v2
         env:
           ARCHIVE_BPF_SELFTESTS: 'true'
-          ARCHIVE_MAKE_HELPERS: ${{ github.repository != 'kernel-patches/bpf' && 'true' || '' }}
+          ARCHIVE_MAKE_HELPERS: 'true'
           ARCHIVE_SCHED_EXT_SELFTESTS: ${{ env.BUILD_SCHED_EXT_SELFTESTS }}
         with:
           arch: ${{ inputs.arch }}
