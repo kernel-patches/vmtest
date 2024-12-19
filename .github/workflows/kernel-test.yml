@@ -83,7 +83,7 @@ jobs:
             2> /dev/null > "${DENYLIST_FILE}" || true
 
       - name: Run selftests
-        uses: libbpf/ci/run-vmtest@v2
+        uses: theihor/libbpf-ci/run-vmtest@scx-dmesg
         # https://github.com/actions/runner/issues/1483#issuecomment-1031671517
         # booleans are weird in GH.
         continue-on-error: ${{ fromJSON(env.CONTINUE_ON_ERROR) }}
