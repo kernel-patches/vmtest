@@ -97,7 +97,7 @@ jobs:
           repo-root: ${{ env.REPO_ROOT }}
 
       - name: Setup build environment
-        uses: theihor/libbpf-ci/setup-build-env@bpf-gcc
+        uses: theihor/libbpf-ci/setup-build-env@bpf-gcc.draft
         with:
           arch: ${{ inputs.arch }}
           llvm-version: ${{ inputs.llvm-version }}
@@ -114,12 +114,12 @@ jobs:
 
       - if: ${{ env.BUILD_BPF_GCC }}
         name: Build GCC for BPF selftests
-        uses: theihor/libbpf-ci/build-bpf-gcc@bpf-gcc
+        uses: theihor/libbpf-ci/build-bpf-gcc@bpf-gcc.draft
         with:
           install-dir: ${{ env.BPF_GCC_INSTALL_DIR }}
 
       - name: Build selftests/bpf
-        uses: theihor/libbpf-ci/build-selftests@bpf-gcc
+        uses: theihor/libbpf-ci/build-selftests@bpf-gcc.draft
         env:
           MAX_MAKE_JOBS: 32
           RELEASE: ${{ inputs.release && '1' || '' }}
