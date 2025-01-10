@@ -101,6 +101,9 @@ class BuildConfig:
         # if self.arch in [Arch.X86_64, Arch.AARCH64]:
         #     tests_list.append("sched_ext")
 
+        if self.arch == Arch.X86_64:
+            tests_list.append("test_progs-bpf_gcc")
+
         if not self.parallel_tests:
             tests_list = [test for test in tests_list if not test.endswith("parallel")]
 
