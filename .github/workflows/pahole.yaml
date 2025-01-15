@@ -19,16 +19,13 @@ jobs:
   build-and-test:
     strategy:
       matrix:
-        runs_on: ["ubuntu-24.04"]
-        build_runs_on: ["ubuntu-24.04"]
         arch: ["x86_64", "aarch64", "s390x"]
-        toolchain:
-          - { "name": "llvm", "fullname": "llvm-18", "version": 18 }
+        llvm-version: [ 18 ]
         tests:
           - include:
             - { "test": "test_progs", "continue_on_error": false, "timeout_minutes": 360 }
       fail-fast: false
-    name: "pahole@next ${{ matrix.arch }}"
+    name: "${{ matrix.arch }} pahole@next"
     uses: ./.github/workflows/kernel-build-test.yml
     permissions:
       id-token: write
@@ -36,18 +33,18 @@ jobs:
     with:
       arch: ${{ matrix.arch }}
       build_release: false
-      build_runs_on: ${{ toJSON(matrix.build_runs_on) }}
+      build_runs_on: '["x86_64", "docker-noble-main", "self-hosted"]'
       download_sources: ${{ github.repository == 'kernel-patches/vmtest' }}
       kernel: 'LATEST'
-      llvm-version: ${{ matrix.toolchain.version }}
+      llvm-version: ${{ matrix.llvm-version }}
       pahole-origin: ${{ inputs.origin || 'https://git.kernel.org/pub/scm/devel/pahole/pahole.git' }}
       pahole-rev: ${{ inputs.rev || 'next' }}
       run_tests: true
       run_veristat: false
-      runs_on: ${{ toJSON(matrix.runs_on) }}
+      runs_on: '["${{ matrix.arch }}", "docker-noble-main", "self-hosted"]'
       tests: ${{ toJSON(matrix.tests) }}
-      toolchain: ${{ matrix.toolchain.name }}
-      toolchain_full: ${{ matrix.toolchain.fullname }}
+      toolchain: gcc
+      toolchain_full: gcc
     # we need to pass AWS_ROLE_ARN, because github complains it's "required"
     # however it's not used, because we don't run veristat
     secrets:
