@@ -38,6 +38,14 @@ on:
         type: boolean
         description: Build selftest with -O2 optimization
         default: false
+      pahole-origin:
+        required: false
+        type: string
+        default: 'https://git.kernel.org/pub/scm/devel/pahole/pahole.git'
+      pahole-rev:
+        required: false
+        type: string
+        default: 'master'
 
 jobs:
   build:
@@ -96,7 +104,8 @@ jobs:
         with:
           arch: ${{ inputs.arch }}
           llvm-version: ${{ inputs.llvm-version }}
-          pahole: master
+          pahole: ${{ inputs.pahole-rev }}
+          pahole-origin: ${{ inputs.pahole-origin }}
 
       - name: Build kernel image
         uses: libbpf/ci/build-linux@v3
