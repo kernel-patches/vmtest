@@ -53,6 +53,14 @@ on:
         type: boolean
         description: Build selftests with -O2 optimization in addition to non-optimized build.
         default: false
+      pahole-origin:
+        required: false
+        default: 'https://git.kernel.org/pub/scm/devel/pahole/pahole.git'
+        type: string
+      pahole-rev:
+        required: false
+        default: 'master'
+        type: string
     secrets:
       AWS_ROLE_ARN:
         required: true
@@ -69,6 +77,8 @@ jobs:
       llvm-version: ${{ inputs.llvm-version }}
       kernel: ${{ inputs.kernel }}
       download_sources: ${{ inputs.download_sources }}
+      pahole-origin: ${{ inputs.pahole-origin }}
+      pahole-rev: ${{ inputs.pahole-rev }}
   build-release:
     if: ${{ inputs.build_release }}
     uses: ./.github/workflows/kernel-build.yml
@@ -80,6 +90,8 @@ jobs:
       llvm-version: ${{ inputs.llvm-version }}
       kernel: ${{ inputs.kernel }}
       download_sources: ${{ inputs.download_sources }}
+      pahole-origin: ${{ inputs.pahole-origin }}
+      pahole-rev: ${{ inputs.pahole-rev }}
       release: true
   test:
     if: ${{ inputs.run_tests }}

@@ -1,0 +1,43 @@
+name: pahole staging
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # once a week
+  workflow_dispatch:
+    inputs:
+      origin:
+        default: 'https://git.kernel.org/pub/scm/devel/pahole/pahole.git'
+        required: true
+      rev:
+        default: 'next'
+        required: true
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        runs_on: ["ubuntu-24.04"]
+        build_runs_on: ["ubuntu-24.04"]
+        arch: ["x86_64", "aarch64", "s390x"]
+        toolchain:
+          - { "name": "llvm", "fullname": "llvm-18", "version": 18 }
+      fail-fast: false
+    name: "pahole@next ${{ matrix.arch }}"
+    uses: ./.github/workflows/kernel-build-test.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      arch: ${{ matrix.arch }}
+      build_release: false
+      build_runs_on: ${{ toJSON(matrix.build_runs_on) }}
+      download_sources: ${{ github.repository == 'kernel-patches/vmtest' }}
+      kernel: 'LATEST'
+      llvm-version: ${{ matrix.toolchain.version }}
+      pahole-origin: ${{ inputs.origin }}
+      pahole-rev: ${{ inputs.rev }}
+      run_tests: true
+      run_veristat: false
+      runs_on: ${{ toJSON(matrix.runs_on) }}
+      toolchain: ${{ matrix.toolchain.name }}
+      toolchain_full: ${{ matrix.toolchain.fullname }}
