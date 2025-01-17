@@ -1,12 +1,14 @@
-From 70414cacbe536a197d56f58a42f9563e5a01b8ec Mon Sep 17 00:00:00 2001
+From b8f614207b0d5e4abd6df8d5cb3cc11f009d1d93 Mon Sep 17 00:00:00 2001
 From: David Vernet <void@manifault.com>
 Date: Mon, 9 Dec 2024 09:29:24 -0600
-Subject: [PATCH] scx: Fix maximal BPF selftest prog
+Subject: [PATCH 1003/1008] scx: Fix maximal BPF selftest prog
 
 maximal.bpf.c is still dispatching to and consuming from SCX_DSQ_GLOBAL.
 Let's have it use its own DSQ to avoid any runtime errors.
 
 Signed-off-by: David Vernet <void@manifault.com>
+Tested-by: Andrea Righi <arighi@nvidia.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
  tools/testing/selftests/sched_ext/maximal.bpf.c | 8 +++++---
  1 file changed, 5 insertions(+), 3 deletions(-)
