@@ -1,7 +1,7 @@
-From dff17a15c1e55b7b4b5764cd33e59b8461c376b4 Mon Sep 17 00:00:00 2001
+From 6f6719c473fcd7c4fcbd35f3c6dde062e17f283e Mon Sep 17 00:00:00 2001
 From: Tejun Heo <tj@kernel.org>
 Date: Fri, 24 Jan 2025 10:48:25 -1000
-Subject: [PATCH 1001/1005] sched_ext: selftests/dsp_local_on: Fix sporadic
+Subject: [PATCH 1002/1006] sched_ext: selftests/dsp_local_on: Fix sporadic
  failures
 
 dsp_local_on has several incorrect assumptions, one of which is that

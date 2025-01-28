@@ -1,7 +1,7 @@
-From 0c9642fd6dde59a9122ee577ab6d119a457345bb Mon Sep 17 00:00:00 2001
+From b8d104310c97652fdb8de2844815bdde4380b2fc Mon Sep 17 00:00:00 2001
 From: Andrea Righi <arighi@nvidia.com>
 Date: Sat, 25 Jan 2025 10:36:07 +0100
-Subject: [PATCH 1004/1005] sched_ext: selftests/dsp_local_on: Fix selftest on
+Subject: [PATCH 1005/1006] sched_ext: selftests/dsp_local_on: Fix selftest on
  UP systems
 
 In UP systems p->migration_disabled is not available. Fix this by using

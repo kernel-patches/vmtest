@@ -1,7 +1,7 @@
-From e2da73db98906a3ad01e23343837d0d34c2c7eea Mon Sep 17 00:00:00 2001
+From db59e469dee19a86c10729e96b2724c2f03800d6 Mon Sep 17 00:00:00 2001
 From: Andrea Righi <arighi@nvidia.com>
 Date: Mon, 27 Jan 2025 23:06:16 +0100
-Subject: [PATCH 1005/1005] sched_ext: Fix lock imbalance in
+Subject: [PATCH 1006/1006] sched_ext: Fix lock imbalance in
  dispatch_to_local_dsq()
 
 While performing the rq locking dance in dispatch_to_local_dsq(), we may

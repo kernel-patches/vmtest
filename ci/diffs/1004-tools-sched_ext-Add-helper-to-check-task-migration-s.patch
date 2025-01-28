@@ -1,7 +1,7 @@
-From 497722e08b99c2dd0acb0b485b8ff801725e4061 Mon Sep 17 00:00:00 2001
+From 067d47db6beb757f45c27fbd34d4ff714d288393 Mon Sep 17 00:00:00 2001
 From: Andrea Righi <arighi@nvidia.com>
 Date: Sat, 25 Jan 2025 18:14:12 +0100
-Subject: [PATCH 1003/1005] tools/sched_ext: Add helper to check task migration
+Subject: [PATCH 1004/1006] tools/sched_ext: Add helper to check task migration
  state
 
 Introduce a new helper for BPF schedulers to determine whether a task
@@ -15,10 +15,10 @@ Signed-off-by: Tejun Heo <tj@kernel.org>
  1 file changed, 11 insertions(+)
 
 diff --git a/tools/sched_ext/include/scx/common.bpf.h b/tools/sched_ext/include/scx/common.bpf.h
-index 625f5b046776..8b88302a8a3b 100644
+index 858ba1f438f6..b16bbd3882f6 100644
 --- a/tools/sched_ext/include/scx/common.bpf.h
 +++ b/tools/sched_ext/include/scx/common.bpf.h
-@@ -325,6 +325,17 @@ static __always_inline const struct cpumask *cast_mask(struct bpf_cpumask *mask)
+@@ -403,6 +403,17 @@ static __always_inline const struct cpumask *cast_mask(struct bpf_cpumask *mask)
  	return (const struct cpumask *)mask;
  }
  

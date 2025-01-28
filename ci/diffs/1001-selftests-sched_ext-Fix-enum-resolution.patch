@@ -1,7 +1,7 @@
-From 18927571b346c30756563af4ac043479a581c6ee Mon Sep 17 00:00:00 2001
+From 610435633bed7e7e4606e77bb211bb3bf0538a40 Mon Sep 17 00:00:00 2001
 From: Andrea Righi <arighi@nvidia.com>
 Date: Thu, 23 Jan 2025 13:46:06 +0100
-Subject: [PATCH 1000/1005] selftests/sched_ext: Fix enum resolution
+Subject: [PATCH 1001/1006] selftests/sched_ext: Fix enum resolution
 
 All scx enums are now automatically generated from vmlinux.h and they
 must be initialized using the SCX_ENUM_INIT() macro.
