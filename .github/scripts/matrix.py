@@ -187,8 +187,8 @@ class BuildConfig:
         if self.llvm_version >= 18:
             tests_list.append("test_progs_cpuv4")
 
-        # if self.arch in [Arch.X86_64, Arch.AARCH64]:
-        #     tests_list.append("sched_ext")
+        if self.arch in [Arch.X86_64, Arch.AARCH64]:
+            tests_list.append("sched_ext")
 
         # Don't run GCC BPF runner, because too many tests are failing
         # See: https://lore.kernel.org/bpf/87bjw6qpje.fsf@oracle.com/
