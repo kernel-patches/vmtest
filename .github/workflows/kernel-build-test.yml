@@ -58,6 +58,7 @@ on:
         required: true
 
 jobs:
+
   # Build kernel and selftest
   build:
     uses: ./.github/workflows/kernel-build.yml
@@ -69,6 +70,7 @@ jobs:
       llvm-version: ${{ inputs.llvm-version }}
       kernel: ${{ inputs.kernel }}
       download_sources: ${{ inputs.download_sources }}
+
   build-release:
     if: ${{ inputs.build_release }}
     uses: ./.github/workflows/kernel-build.yml
@@ -81,6 +83,7 @@ jobs:
       kernel: ${{ inputs.kernel }}
       download_sources: ${{ inputs.download_sources }}
       release: true
+
   test:
     if: ${{ inputs.run_tests }}
     uses: ./.github/workflows/kernel-test.yml
@@ -127,3 +130,17 @@ jobs:
       runs_on: ${{ inputs.runs_on }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+
+  gcc-bpf:
+    name: 'GCC BPF'
+    if: ${{ inputs.arch == 'x86_64' }}
+    uses: ./.github/workflows/gcc-bpf.yml
+    needs: [build]
+    with:
+      runs_on: ${{ inputs.runs_on }}
+      arch: ${{ inputs.arch }}
+      llvm-version: ${{ inputs.llvm-version }}
+      toolchain: ${{ inputs.toolchain }}
+      toolchain_full: ${{ inputs.toolchain_full }}
+      download_sources: ${{ inputs.download_sources }}
+
