@@ -46,13 +46,11 @@ jobs:
     timeout-minutes: 100
     env:
         ARTIFACTS_ARCHIVE: "vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst"
-
-        BUILD_BPF_GCC: ${{ inputs.arch == 'x86_64' && 'true' || '' }}
-        BPF_GCC_INSTALL_DIR: ${{ github.workspace }}/bpf-gcc
-
         BPF_NEXT_BASE_BRANCH: 'master'
         BPF_NEXT_FETCH_DEPTH: 64 # A bit of history is needed to facilitate incremental builds
         # BUILD_SCHED_EXT_SELFTESTS: ${{ inputs.arch == 'x86_64' || inputs.arch == 'aarch64' && 'true' || '' }}
+        GCC_BPF_COMPILE: ${{ inputs.arch == 'x86_64' && 'true' || '' }}
+        GCC_BPF_INSTALL_DIR: ${{ github.workspace }}/gcc-bpf
         KBUILD_OUTPUT: ${{ github.workspace }}/kbuild-output
         KERNEL: ${{ inputs.kernel }}
         KERNEL_ROOT: ${{ github.workspace }}
@@ -111,18 +109,19 @@ jobs:
           max-make-jobs: 32
           llvm-version: ${{ inputs.llvm-version }}
 
-      - if: ${{ env.BUILD_BPF_GCC }}
-        name: Build GCC for BPF selftests
-        uses: libbpf/ci/build-bpf-gcc@v3
-        with:
-          install-dir: ${{ env.BPF_GCC_INSTALL_DIR }}
+      - if: ${{ env.GCC_BPF_COMPILE }}
+        name: Download GCC BPF compiler
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./ci/download-gcc-bpf.sh theihor/gcc-bpf ${{ env.GCC_BPF_INSTALL_DIR }}
 
       - name: Build selftests/bpf
         uses: libbpf/ci/build-selftests@v3
         env:
           MAX_MAKE_JOBS: 32
           RELEASE: ${{ inputs.release && '1' || '' }}
-          BPF_GCC: ${{ env.BUILD_BPF_GCC && env.BPF_GCC_INSTALL_DIR || '' }}
+          BPF_GCC: ${{ env.GCC_BPF_COMPILE && env.GCC_BPF_INSTALL_DIR || '' }}
         with:
           arch: ${{ inputs.arch }}
           kernel-root: ${{ env.KERNEL_ROOT }}
