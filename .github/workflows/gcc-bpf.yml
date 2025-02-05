@@ -37,6 +37,10 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            ci
 
       - if: ${{ inputs.download_sources }}
         name: Download bpf-next tree
@@ -44,6 +48,12 @@ jobs:
         with:
           dest: ${{ env.REPO_ROOT }}
           rev: ${{ env.BPF_NEXT_BASE_BRANCH }}
+
+      - if: ${{ ! inputs.download_sources }}
+        name: Checkout ${{ github.repository }} to ./src
+        uses: actions/checkout@v4
+        with:
+          path: 'src'
 
       - uses:  libbpf/ci/patch-kernel@v3
         with:
