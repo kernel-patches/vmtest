@@ -42,8 +42,8 @@ on:
 jobs:
   build:
     name: build for ${{ inputs.arch }} with ${{ inputs.toolchain_full }}${{ inputs.release && '-O2' || '' }}
-    runs-on: ${{ fromJSON(inputs.runs_on) }}
-    timeout-minutes: 100
+    runs-on:
+      - codebuild-gha-runner-poc-${{ github.run_id }}-${{ github.run_attempt }}
     env:
         ARTIFACTS_ARCHIVE: "vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst"
         BPF_NEXT_BASE_BRANCH: 'master'
