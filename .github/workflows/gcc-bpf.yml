@@ -76,7 +76,7 @@ jobs:
           llvm-version: ${{ inputs.llvm-version }}
 
       - name: Build GCC BPF compiler
-        uses: libbpf/ci/build-bpf-gcc@v3
+        uses: libbpf/ci/build-bpf-gcc@v3.3
         with:
           install-dir: ${{ env.BPF_GCC_INSTALL_DIR }}
 
