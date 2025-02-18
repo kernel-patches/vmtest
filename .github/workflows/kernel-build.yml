@@ -98,6 +98,16 @@ jobs:
           llvm-version: ${{ inputs.llvm-version }}
           pahole: master
 
+      # We have to setup qemu+binfmt in order to enable cross-compation of selftests.
+      # During selftests build, freshly built bpftool is executed.
+      # On bare-metal and s390x hosts binfmt is pre-configured.
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+      - name: Setup binfmt and qemu
+        uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:qemu-v9.2.0
+
       - name: Build kernel image
         uses: libbpf/ci/build-linux@v3
         with:
