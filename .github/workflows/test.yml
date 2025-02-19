@@ -19,6 +19,7 @@ jobs:
     # This could be somehow fixed long term by making this action/workflow re-usable and letting the called
     # specify what to run on.
     runs-on: ${{ github.repository_owner == 'kernel-patches' && 'x86_64' || 'ubuntu-latest' }}
+    permissions: read-all
     outputs:
       build-matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
     steps:
@@ -27,7 +28,14 @@ jobs:
           sparse-checkout: |
             .github
             ci
+      - name: Install script dependencies
+        shell: bash
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install python3-requests
       - id: set-matrix-impl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_READ_RUNNERS }}
         run: |
           python3 .github/scripts/matrix.py
 

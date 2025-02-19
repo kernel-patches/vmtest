@@ -42,8 +42,12 @@ on:
 jobs:
   build:
     name: build for ${{ inputs.arch }} with ${{ inputs.toolchain_full }}${{ inputs.release && '-O2' || '' }}
-    runs-on:
-      - codebuild-gha-runner-poc-${{ github.run_id }}-${{ github.run_attempt }}
+    runs-on: >-
+      ${{
+          contains(fromJSON(inputs.runs_on), 'codebuild')
+          && format('codebuild-gha-runner-poc-{0}-{1}', github.run_id, github.run_attempt)
+          || fromJSON(inputs.runs_on)
+      }}
     env:
         ARTIFACTS_ARCHIVE: "vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst"
         BPF_NEXT_BASE_BRANCH: 'master'
@@ -54,6 +58,7 @@ jobs:
         KERNEL_ROOT: ${{ github.workspace }}
         REPO_PATH: ""
         REPO_ROOT: ${{ github.workspace }}
+        RUNNER_TYPE: ${{ contains(fromJSON(inputs.runs_on), 'codebuild') && 'codebuild' || 'self-hosted' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -98,12 +103,14 @@ jobs:
           llvm-version: ${{ inputs.llvm-version }}
           pahole: master
 
-      # We have to setup qemu+binfmt in order to enable cross-compation of selftests.
-      # During selftests build, freshly built bpftool is executed.
-      # On bare-metal and s390x hosts binfmt is pre-configured.
-      - name: Set up Docker
+        # We have to setup qemu+binfmt in order to enable cross-compation of selftests.
+        # During selftests build, freshly built bpftool is executed.
+        # On self-hosted bare-metal hosts binfmt is pre-configured.
+      - if: ${{ env.RUNNER_TYPE == 'codebuild' }}
+        name: Set up docker
         uses: docker/setup-docker-action@v4
-      - name: Setup binfmt and qemu
+      - if: ${{ env.RUNNER_TYPE == 'codebuild' }}
+        name: Setup binfmt and qemu
         uses: docker/setup-qemu-action@v3
         with:
           image: tonistiigi/binfmt:qemu-v9.2.0
