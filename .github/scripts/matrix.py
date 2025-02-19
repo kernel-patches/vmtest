@@ -3,9 +3,10 @@
 import os
 import dataclasses
 import json
+import requests
 
 from enum import Enum
-from typing import Any, Dict, List, Final, Set, Union
+from typing import Any, Dict, List, Final, Set, Union, Optional
 
 MANAGED_OWNER: Final[str] = "kernel-patches"
 MANAGED_REPOS: Final[Set[str]] = {
@@ -66,20 +67,14 @@ class BuildConfig:
     run_veristat: bool = False
     parallel_tests: bool = False
     build_release: bool = False
+    build_runs_on: Optional[List[str]] = dataclasses.field(
+        default_factory=lambda: [DEFAULT_RUNNER]
+    )
 
     @property
     def runs_on(self) -> List[str]:
         if is_managed_repo():
             return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [self.arch.value]
-        return [DEFAULT_RUNNER]
-
-    @property
-    def build_runs_on(self) -> List[str]:
-        if is_managed_repo():
-            # Build s390x on x86_64
-            return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [
-                self.arch.value == "s390x" and Arch.X86_64.value or self.arch.value,
-            ]
         return [DEFAULT_RUNNER]
 
     @property
@@ -158,38 +153,115 @@ def generate_test_config(test: str) -> Dict[str, Union[str, int]]:
     return config
 
 
+def query_runners() -> Optional[List[Dict[str, Any]]]:
+    token = os.environ["GITHUB_TOKEN"]
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    owner = os.environ["GITHUB_REPOSITORY_OWNER"]
+    url = f"https://api.github.com/orgs/{owner}/actions/runners"
+    # GitHub returns 30 runners per page, fetch all
+    all_runners = []
+    try:
+        while url:
+            response = requests.get(url, headers=headers)
+            if response.status_code != 200:
+                return None
+            data = response.json()
+            all_runners.extend(data.get("runners", []))
+            # Check for next page URL in Link header
+            url = None
+            if "Link" in response.headers:
+                links = requests.utils.parse_header_links(response.headers["Link"])
+                for link in links:
+                    if link["rel"] == "next":
+                        url = link["url"]
+                        break
+        return all_runners
+    except Exception as e:
+        print(f"Warning: Failed to query runner status due to exception: {e}")
+        return None
+
+
+def is_x86_64_runner(runner: Dict[str, Any]) -> bool:
+    labels = [label["name"] for label in runner["labels"]]
+    for label in DEFAULT_SELF_HOSTED_RUNNER_TAGS:
+        if label not in labels:
+            return False
+    return "x86_64" in labels
+
+
+def x86_64_runners_too_busy() -> bool:
+
+    print(f"is_managed_repo(): {is_managed_repo()}")
+
+    if not is_managed_repo():
+        return False
+
+    runners = query_runners()
+    if not runners:
+        print("Warning: failed to query runner status from GitHub")
+        return False
+
+    x86_64_runners = [r for r in runners if is_x86_64_runner(r)]
+    n_busy = 0
+    n_idle = 0
+    n_offline = 0
+    for runner in x86_64_runners:
+        if runner["status"] == "online":
+            if runner["busy"]:
+                n_busy += 1
+            else:
+                n_idle += 1
+        else:
+            n_offline += 1
+    too_busy = n_idle == 0 or (n_busy / (n_idle + n_busy)) > 0.8
+
+    print(f"GitHub says we have {len(x86_64_runners)} x86_64 runners")
+    print(f"Busy: {n_busy}, Idle: {n_idle}, Offline: {n_offline}")
+    print(f"x86_64 runners too busy: {too_busy}")
+
+    return too_busy
+
+
 if __name__ == "__main__":
+
+    if x86_64_runners_too_busy():
+        # this value is checked for in kernel-build.yml
+        x86_64_builder = ["codebuild"]
+    else:
+        x86_64_builder = DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.X86_64.value]
+
     matrix = [
         BuildConfig(
             arch=Arch.X86_64,
             toolchain=Toolchain(compiler=Compiler.GCC, version=DEFAULT_LLVM_VERSION),
             run_veristat=True,
             parallel_tests=True,
+            build_runs_on=x86_64_builder,
         ),
         BuildConfig(
             arch=Arch.X86_64,
             toolchain=Toolchain(compiler=Compiler.LLVM, version=DEFAULT_LLVM_VERSION),
             build_release=True,
+            build_runs_on=x86_64_builder,
         ),
         BuildConfig(
             arch=Arch.X86_64,
             toolchain=Toolchain(compiler=Compiler.LLVM, version=18),
             build_release=True,
+            build_runs_on=x86_64_builder,
         ),
         BuildConfig(
             arch=Arch.AARCH64,
             toolchain=Toolchain(compiler=Compiler.GCC, version=DEFAULT_LLVM_VERSION),
+            build_runs_on=DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.AARCH64.value],
         ),
-        # BuildConfig(
-        #     arch=Arch.AARCH64,
-        #     toolchain=Toolchain(
-        #         compiler=Compiler.LLVM,
-        #         version=DEFAULT_LLVM_VERSION
-        #     ),
-        # ),
         BuildConfig(
             arch=Arch.S390X,
             toolchain=Toolchain(compiler=Compiler.GCC, version=DEFAULT_LLVM_VERSION),
+            build_runs_on=x86_64_builder,
         ),
     ]
 
