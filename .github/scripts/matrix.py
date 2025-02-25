@@ -218,7 +218,7 @@ def x86_64_runners_too_busy() -> bool:
                 n_idle += 1
         else:
             n_offline += 1
-    too_busy = n_idle == 0 or (n_busy / (n_idle + n_busy)) > 0.8
+    too_busy = n_idle == 0 or (n_busy / (n_idle + n_busy)) > 0.01
 
     print(f"GitHub says we have {len(x86_64_runners)} x86_64 runners")
     print(f"Busy: {n_busy}, Idle: {n_idle}, Offline: {n_offline}")
