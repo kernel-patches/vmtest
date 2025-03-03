@@ -66,6 +66,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: ${{ inputs.download_sources && 1 || env.BPF_NEXT_FETCH_DEPTH }}
+
+      - if: ${{ env.RUNNER_TYPE == 'codebuild' }}
+        shell: bash
+        run: .github/scripts/tmpfsify-workspace.sh
+
       - if: ${{ inputs.download_sources }}
         name: Download bpf-next tree
         env:
