@@ -25,8 +25,12 @@ on:
 jobs:
   test:
     name: GCC BPF
-    runs-on: ${{ fromJSON(inputs.runs_on) }}
-    timeout-minutes: 100
+    runs-on: >-
+      ${{
+          github.repository_owner == 'kernel-patches'
+          && format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt)
+          || fromJSON(inputs.runs_on)
+      }}
     env:
       ARCH: ${{ inputs.arch }}
       BPF_GCC_INSTALL_DIR: ${{ github.workspace }}/gcc-bpf
