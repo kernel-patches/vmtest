@@ -27,7 +27,7 @@ jobs:
     name: GCC BPF
     runs-on: >-
       ${{
-          github.repository_owner == 'kernel-patches'
+          contains(fromJSON(inputs.runs_on), 'codebuild')
           && format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt)
           || fromJSON(inputs.runs_on)
       }}

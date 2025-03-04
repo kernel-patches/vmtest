@@ -13,9 +13,9 @@ MANAGED_REPOS: Final[Set[str]] = {
     f"{MANAGED_OWNER}/vmtest",
 }
 
+DEFAULT_SELF_HOSTED_RUNNER_TAGS: Final[List[str]] = ["self-hosted", "docker-noble-main"]
 DEFAULT_RUNNER: Final[str] = "ubuntu-24.04"
 DEFAULT_LLVM_VERSION: Final[int] = 17
-DEFAULT_SELF_HOSTED_RUNNER_TAGS: Final[List[str]] = ["self-hosted", "docker-noble-main"]
 
 
 class Arch(str, Enum):
@@ -71,16 +71,15 @@ class BuildConfig:
     def runs_on(self) -> List[str]:
         if is_managed_repo():
             return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [self.arch.value]
-        return [DEFAULT_RUNNER]
+        else:
+            return [DEFAULT_RUNNER]
 
     @property
     def build_runs_on(self) -> List[str]:
         if is_managed_repo():
-            # Build s390x on x86_64
-            return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [
-                self.arch.value == "s390x" and Arch.X86_64.value or self.arch.value,
-            ]
-        return [DEFAULT_RUNNER]
+            return ["codebuild"]
+        else:
+            return [DEFAULT_RUNNER]
 
     @property
     def tests(self) -> Dict[str, Any]:
@@ -180,23 +179,16 @@ if __name__ == "__main__":
             arch=Arch.AARCH64,
             toolchain=Toolchain(compiler=Compiler.GCC, version=DEFAULT_LLVM_VERSION),
         ),
-        # BuildConfig(
-        #     arch=Arch.AARCH64,
-        #     toolchain=Toolchain(
-        #         compiler=Compiler.LLVM,
-        #         version=DEFAULT_LLVM_VERSION
-        #     ),
-        # ),
         BuildConfig(
             arch=Arch.S390X,
             toolchain=Toolchain(compiler=Compiler.GCC, version=DEFAULT_LLVM_VERSION),
         ),
     ]
 
-    # Outside of those repositories we only run on x86_64
+    # Outside of managed repositories only run on x86_64
     if not is_managed_repo():
         matrix = [config for config in matrix if config.arch == Arch.X86_64]
 
     json_matrix = json.dumps({"include": [config.to_dict() for config in matrix]})
-    print(json_matrix)
+    print(json.dumps(json.loads(json_matrix), indent=4))
     set_output("build_matrix", json_matrix)
