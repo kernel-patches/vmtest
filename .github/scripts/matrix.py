@@ -77,7 +77,10 @@ class BuildConfig:
     @property
     def build_runs_on(self) -> List[str]:
         if is_managed_repo():
-            return ["codebuild"]
+            if self.arch == Arch.X86_64:
+                return ["codebuild"]
+            else:
+                return [self.arch.value]
         else:
             return [DEFAULT_RUNNER]
 
