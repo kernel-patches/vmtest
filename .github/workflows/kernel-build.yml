@@ -62,7 +62,7 @@ jobs:
         KERNEL_ROOT: ${{ github.workspace }}
         REPO_PATH: ""
         REPO_ROOT: ${{ github.workspace }}
-        RUNNER_TYPE: ${{ contains(fromJSON(inputs.runs_on), 'codebuild') && 'codebuild' || 'default' }}
+        RUNNER_TYPE: ${{ github.repository_owner == 'kernel-patches' && 'codebuild' || 'default' }}
     steps:
       - uses: actions/checkout@v4
         with:

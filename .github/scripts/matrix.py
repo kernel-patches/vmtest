@@ -3,10 +3,9 @@
 import os
 import dataclasses
 import json
-import requests
 
 from enum import Enum
-from typing import Any, Dict, List, Final, Set, Union, Optional
+from typing import Any, Dict, List, Final, Set, Union
 
 MANAGED_OWNER: Final[str] = "kernel-patches"
 MANAGED_REPOS: Final[Set[str]] = {
@@ -15,10 +14,8 @@ MANAGED_REPOS: Final[Set[str]] = {
 }
 
 DEFAULT_SELF_HOSTED_RUNNER_TAGS: Final[List[str]] = ["self-hosted", "docker-noble-main"]
-DEFAULT_GITHUB_HOSTED_RUNNER: Final[str] = "ubuntu-24.04"
+DEFAULT_RUNNER: Final[str] = "ubuntu-24.04"
 DEFAULT_LLVM_VERSION: Final[int] = 17
-
-RUNNERS_BUSY_THRESHOLD: Final[float] = 0.8
 
 
 class Arch(str, Enum):
@@ -61,92 +58,6 @@ class Toolchain:
         }
 
 
-def query_runners_from_github() -> List[Dict[str, Any]]:
-    if "GITHUB_TOKEN" not in os.environ:
-        return []
-    token = os.environ["GITHUB_TOKEN"]
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json",
-    }
-    owner = os.environ["GITHUB_REPOSITORY_OWNER"]
-    url: Optional[str] = f"https://api.github.com/orgs/{owner}/actions/runners"
-    # GitHub returns 30 runners per page, fetch all
-    all_runners = []
-    try:
-        while url is not None:
-            response = requests.get(url, headers=headers)
-            if response.status_code != 200:
-                print(f"Failed to query runners: {response.status_code}")
-                print(f"response: {response.text}")
-                return []
-            data = response.json()
-            all_runners.extend(data.get("runners", []))
-            # Check for next page URL in Link header
-            url = None
-            if "Link" in response.headers:
-                links = requests.utils.parse_header_links(response.headers["Link"])
-                for link in links:
-                    if link["rel"] == "next":
-                        url = link["url"]
-                        break
-        return all_runners
-    except Exception as e:
-        print(f"Warning: Failed to query runner status due to exception: {e}")
-        return []
-
-
-all_runners_cached: Optional[List[Dict[str, Any]]] = None
-
-
-def all_runners() -> List[Dict[str, Any]]:
-    global all_runners_cached
-    if all_runners_cached is None:
-        print("Querying runners from GitHub...")
-        all_runners_cached = query_runners_from_github()
-        print(f"Github returned {len(all_runners_cached)} runners")
-        counts = count_by_status(all_runners_cached)
-        print(
-            f"Busy: {counts['busy']}, Idle: {counts['idle']}, Offline: {counts['offline']}"
-        )
-    return all_runners_cached
-
-
-def runner_labels(runner: Dict[str, Any]) -> List[str]:
-    return [label["name"] for label in runner["labels"]]
-
-
-def is_self_hosted_runner(runner: Dict[str, Any]) -> bool:
-    labels = runner_labels(runner)
-    for label in DEFAULT_SELF_HOSTED_RUNNER_TAGS:
-        if label not in labels:
-            return False
-    return True
-
-
-def self_hosted_runners() -> List[Dict[str, Any]]:
-    runners = all_runners()
-    return [r for r in runners if is_self_hosted_runner(r)]
-
-
-def runners_by_arch(arch: Arch) -> List[Dict[str, Any]]:
-    runners = self_hosted_runners()
-    return [r for r in runners if arch.value in runner_labels(r)]
-
-
-def count_by_status(runners: List[Dict[str, Any]]) -> Dict[str, int]:
-    result = {"busy": 0, "idle": 0, "offline": 0}
-    for runner in runners:
-        if runner["status"] == "online":
-            if runner["busy"]:
-                result["busy"] += 1
-            else:
-                result["idle"] += 1
-        else:
-            result["offline"] += 1
-    return result
-
-
 @dataclasses.dataclass
 class BuildConfig:
     arch: Arch
@@ -161,28 +72,14 @@ class BuildConfig:
         if is_managed_repo():
             return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [self.arch.value]
         else:
-            return [DEFAULT_GITHUB_HOSTED_RUNNER]
+            return [DEFAULT_RUNNER]
 
     @property
     def build_runs_on(self) -> List[str]:
-        if not is_managed_repo():
-            return [DEFAULT_GITHUB_HOSTED_RUNNER]
-        # For managed repos, check the busyness of relevant self-hosted runners
-        # If they are too busy, use codebuild
-        runner_arch = self.arch
-        # We don't build s390x kernel on s390x runners, because it's too slow
-        # Cross-compiling on x86_64 is faster
-        if runner_arch == Arch.S390X:
-            runner_arch = Arch.X86_64
-        runners = runners_by_arch(runner_arch)
-        counts = count_by_status(runners)
-        online = counts["idle"] + counts["busy"]
-        busy = counts["busy"]
-        # if online <= 0, then something is wrong, don't use codebuild
-        if online > 0 and busy / online > RUNNERS_BUSY_THRESHOLD:
+        if is_managed_repo():
             return ["codebuild"]
         else:
-            return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [runner_arch.value]
+            return [DEFAULT_RUNNER]
 
     @property
     def tests(self) -> Dict[str, Any]:
