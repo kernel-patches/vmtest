@@ -167,6 +167,14 @@ class BuildConfig:
     def build_runs_on(self) -> List[str]:
         if not is_managed_repo():
             return [DEFAULT_GITHUB_HOSTED_RUNNER]
+
+        # @Temporary: disable codebuild runners for cross-compilation jobs
+        match self.arch:
+            case Arch.S390X:
+                return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.X86_64.value]
+            case Arch.AARCH64:
+                return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.AARCH64.value]
+
         # For managed repos, check the busyness of relevant self-hosted runners
         # If they are too busy, use codebuild
         runner_arch = self.arch
