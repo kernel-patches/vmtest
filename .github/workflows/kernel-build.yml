@@ -125,7 +125,7 @@ jobs:
           image: tonistiigi/binfmt:qemu-v9.2.0
 
       - name: Build kernel image
-        uses: libbpf/ci/build-linux@v3
+        uses: theihor/libbpf-ci/build-linux@clean-kconfig
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
