@@ -49,7 +49,7 @@ jobs:
 
       - if: ${{ inputs.download_sources }}
         name: Download bpf-next tree
-        uses: libbpf/ci/get-linux-source@v3
+        uses: theihor/libbpf-ci/get-linux-source@fetch-linux
         with:
           dest: ${{ env.REPO_ROOT }}
           rev: ${{ env.BPF_NEXT_BASE_BRANCH }}

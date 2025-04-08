@@ -76,7 +76,7 @@ jobs:
         name: Download bpf-next tree
         env:
           FETCH_DEPTH: ${{ env.BPF_NEXT_FETCH_DEPTH }}
-        uses: libbpf/ci/get-linux-source@v3
+        uses: theihor/libbpf-ci/get-linux-source@fetch-linux
         with:
           dest: '.kernel'
           rev: ${{ env.BPF_NEXT_BASE_BRANCH }}
