@@ -171,7 +171,7 @@ class BuildConfig:
         # @Temporary: disable codebuild runners for cross-compilation jobs
         match self.arch:
             case Arch.S390X:
-                return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.S390X.value]
+                return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.X86_64.value]
             case Arch.AARCH64:
                 return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.AARCH64.value]
 
