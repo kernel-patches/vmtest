@@ -106,7 +106,7 @@ jobs:
           repo-root: ${{ env.REPO_ROOT }}
 
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@v3
+        uses: theihor/libbpf-ci/setup-build-env@cross-compilers
         with:
           arch: ${{ inputs.arch }}
           llvm-version: ${{ inputs.llvm-version }}

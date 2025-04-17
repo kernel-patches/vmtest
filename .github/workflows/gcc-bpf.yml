@@ -75,7 +75,7 @@ jobs:
         run: zstd -d -T0 vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst --stdout | tar -xf -
 
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@v3
+        uses: theihor/libbpf-ci/setup-build-env@cross-compilers
         with:
           arch: ${{ inputs.arch }}
           llvm-version: ${{ inputs.llvm-version }}
