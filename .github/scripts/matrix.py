@@ -16,6 +16,7 @@ MANAGED_REPOS: Final[Set[str]] = {
 
 DEFAULT_SELF_HOSTED_RUNNER_TAGS: Final[List[str]] = ["self-hosted", "docker-noble-main"]
 DEFAULT_GITHUB_HOSTED_RUNNER: Final[str] = "ubuntu-24.04"
+DEFAULT_GCC_VERSION: Final[int] = 13
 DEFAULT_LLVM_VERSION: Final[int] = 17
 
 RUNNERS_BUSY_THRESHOLD: Final[float] = 0.8
@@ -34,31 +35,6 @@ class Arch(str, Enum):
 class Compiler(str, Enum):
     GCC = "gcc"
     LLVM = "llvm"
-
-
-@dataclasses.dataclass
-class Toolchain:
-    compiler: Compiler
-    # This is relevant ONLY for LLVM and should not be required for GCC
-    version: int
-
-    @property
-    def short_name(self) -> str:
-        return str(self.compiler.value)
-
-    @property
-    def full_name(self) -> str:
-        if self.compiler == Compiler.GCC:
-            return self.short_name
-
-        return f"{self.short_name}-{self.version}"
-
-    def to_dict(self) -> Dict[str, Union[str, int]]:
-        return {
-            "name": self.short_name,
-            "fullname": self.full_name,
-            "version": self.version,
-        }
 
 
 def query_runners_from_github() -> List[Dict[str, Any]]:
@@ -150,7 +126,9 @@ def count_by_status(runners: List[Dict[str, Any]]) -> Dict[str, int]:
 @dataclasses.dataclass
 class BuildConfig:
     arch: Arch
-    toolchain: Toolchain
+    kernel_compiler: Compiler = Compiler.GCC
+    gcc_version: int = DEFAULT_GCC_VERSION
+    llvm_version: int = DEFAULT_LLVM_VERSION
     kernel: str = "LATEST"
     run_veristat: bool = False
     parallel_tests: bool = False
@@ -205,7 +183,7 @@ class BuildConfig:
         if self.arch.value != "s390x":
             tests_list.append("test_maps")
 
-        if self.toolchain.version >= 18:
+        if self.llvm_version >= 18:
             tests_list.append("test_progs_cpuv4")
 
         # if self.arch in [Arch.X86_64, Arch.AARCH64]:
@@ -224,7 +202,9 @@ class BuildConfig:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "arch": self.arch.value,
-            "toolchain": self.toolchain.to_dict(),
+            "kernel_compiler": self.kernel_compiler.value,
+            "gcc_version": DEFAULT_GCC_VERSION,
+            "llvm_version": DEFAULT_LLVM_VERSION,
             "kernel": self.kernel,
             "run_veristat": self.run_veristat,
             "parallel_tests": self.parallel_tests,
@@ -272,27 +252,19 @@ if __name__ == "__main__":
     matrix = [
         BuildConfig(
             arch=Arch.X86_64,
-            toolchain=Toolchain(compiler=Compiler.GCC, version=DEFAULT_LLVM_VERSION),
             run_veristat=True,
             parallel_tests=True,
         ),
         BuildConfig(
             arch=Arch.X86_64,
-            toolchain=Toolchain(compiler=Compiler.LLVM, version=DEFAULT_LLVM_VERSION),
-            build_release=True,
-        ),
-        BuildConfig(
-            arch=Arch.X86_64,
-            toolchain=Toolchain(compiler=Compiler.LLVM, version=18),
+            kernel_compiler=Compiler.LLVM,
             build_release=True,
         ),
         BuildConfig(
             arch=Arch.AARCH64,
-            toolchain=Toolchain(compiler=Compiler.GCC, version=DEFAULT_LLVM_VERSION),
         ),
         BuildConfig(
             arch=Arch.S390X,
-            toolchain=Toolchain(compiler=Compiler.GCC, version=DEFAULT_LLVM_VERSION),
         ),
     ]
 
