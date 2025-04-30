@@ -16,8 +16,8 @@ MANAGED_REPOS: Final[Set[str]] = {
 
 DEFAULT_SELF_HOSTED_RUNNER_TAGS: Final[List[str]] = ["self-hosted", "docker-noble-main"]
 DEFAULT_GITHUB_HOSTED_RUNNER: Final[str] = "ubuntu-24.04"
-DEFAULT_GCC_VERSION: Final[int] = 13
-DEFAULT_LLVM_VERSION: Final[int] = 17
+DEFAULT_GCC_VERSION: Final[int] = 14
+DEFAULT_LLVM_VERSION: Final[int] = 18
 
 RUNNERS_BUSY_THRESHOLD: Final[float] = 0.8
 
