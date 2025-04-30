@@ -9,7 +9,10 @@ on:
       arch:
         required: true
         type: string
-      llvm-version:
+      gcc_version:
+        required: true
+        type: string
+      llvm_version:
         required: true
         type: string
       toolchain:
@@ -78,7 +81,8 @@ jobs:
         uses: libbpf/ci/setup-build-env@v3
         with:
           arch: ${{ inputs.arch }}
-          llvm-version: ${{ inputs.llvm-version }}
+          gcc-version: ${{ inputs.gcc_version }}
+          llvm-version: ${{ inputs.llvm_version }}
 
       - name: Download GCC BPF compiler
         shell: bash
@@ -95,6 +99,5 @@ jobs:
         with:
           arch: ${{ inputs.arch }}
           kernel-root: ${{ env.REPO_ROOT }}
-          llvm-version: ${{ inputs.llvm-version }}
+          llvm-version: ${{ inputs.llvm_version }}
           toolchain: ${{ inputs.toolchain }}
-
