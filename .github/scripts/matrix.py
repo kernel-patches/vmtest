@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-import os
 import dataclasses
 import json
-import requests
+import os
 
 from enum import Enum
-from typing import Any, Dict, List, Final, Set, Union, Optional
+from typing import Any, Dict, Final, List, Optional, Set, Union
+
+import requests
 
 MANAGED_OWNER: Final[str] = "kernel-patches"
 MANAGED_REPOS: Final[Set[str]] = {
@@ -17,7 +18,7 @@ MANAGED_REPOS: Final[Set[str]] = {
 DEFAULT_SELF_HOSTED_RUNNER_TAGS: Final[List[str]] = ["self-hosted", "docker-noble-main"]
 DEFAULT_GITHUB_HOSTED_RUNNER: Final[str] = "ubuntu-24.04"
 DEFAULT_GCC_VERSION: Final[int] = 14
-DEFAULT_LLVM_VERSION: Final[int] = 18
+DEFAULT_LLVM_VERSION: Final[int] = 20
 
 RUNNERS_BUSY_THRESHOLD: Final[float] = 0.8
 
