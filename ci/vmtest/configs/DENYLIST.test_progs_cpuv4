@@ -1,0 +1,2 @@
+arena_spin_lock # llvm 20 generates code that fails verification
+verifier_arena/basic_alloc2
