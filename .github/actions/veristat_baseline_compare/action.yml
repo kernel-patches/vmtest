@@ -22,9 +22,9 @@ runs:
     - if: ${{ github.event_name == 'pull_request' }}
       uses: actions/cache/restore@v4
       with:
-        key: ${{ inputs.baseline_name }}-${{ github.base_ref }}
+        key: ${{ github.base_ref }}-${{ inputs.baseline_name }}-
         restore-keys: |
-          ${{ inputs.baseline_name }}-
+          ${{ github.base_ref }}-${{ inputs.baseline_name }}
         path: '${{ github.workspace }}/${{ inputs.baseline_name }}'
 
     - if: ${{ github.event_name == 'pull_request' }}
@@ -45,5 +45,5 @@ runs:
     - if: ${{ github.event_name == 'push' }}
       uses: actions/cache/save@v4
       with:
-        key: ${{ inputs.baseline_name }}-${{ github.ref_name }}-${{ github.run_id }}
+        key: ${{ github.ref_name }}-${{ inputs.baseline_name }}-${{ github.run_id }}
         path: '${{ github.workspace }}/${{ inputs.baseline_name }}'
