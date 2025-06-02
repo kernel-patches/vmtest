@@ -1,7 +1,7 @@
 From baa39c169dd526cb0186187fc44ec462266efcc6 Mon Sep 17 00:00:00 2001
 From: Yonghong Song <yonghong.song@linux.dev>
 Date: Thu, 29 May 2025 13:11:51 -0700
-Subject: [PATCH 2/4] selftests/bpf: Fix selftest
+Subject: [PATCH 2/3] selftests/bpf: Fix selftest
  btf_tag/btf_type_tag_percpu_vmlinux_helper failure
 
 Ihor Solodrai reported selftest 'btf_tag/btf_type_tag_percpu_vmlinux_helper'

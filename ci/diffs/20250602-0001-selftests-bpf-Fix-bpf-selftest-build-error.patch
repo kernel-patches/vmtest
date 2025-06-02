@@ -1,7 +1,7 @@
 From 4b65d5ae971430287855a89635a184c489bd02a5 Mon Sep 17 00:00:00 2001
 From: Saket Kumar Bhaskar <skb99@linux.ibm.com>
 Date: Mon, 12 May 2025 14:41:07 +0530
-Subject: [PATCH 1/4] selftests/bpf: Fix bpf selftest build error
+Subject: [PATCH 1/3] selftests/bpf: Fix bpf selftest build error
 
 On linux-next, build for bpf selftest displays an error due to
 mismatch in the expected function signature of bpf_testmod_test_read
