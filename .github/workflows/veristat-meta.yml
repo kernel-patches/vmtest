@@ -38,6 +38,7 @@ jobs:
       REPO_PATH: ""
       KBUILD_OUTPUT: kbuild-output/
       ARCH_AND_TOOL: ${{ inputs.arch }}-${{ inputs.toolchain_full }}
+      VERISTAT_TARGET: meta
 
     steps:
 
@@ -70,13 +71,13 @@ jobs:
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
       - name: Run veristat
-        uses: libbpf/ci/run-vmtest@v3
+        uses: libbpf/ci/run-vmtest@scx
         with:
           arch: x86_64
           vmlinuz: '${{ github.workspace }}/vmlinuz'
           kernel-root: '.'
           max-cpu: 8
-          kernel-test: 'run_veristat_meta'
+          kernel-test: 'run_veristat'
           output-dir: '${{ github.workspace }}'
 
       - name: Compare and save veristat.meta.csv
