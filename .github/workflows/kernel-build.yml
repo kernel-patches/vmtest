@@ -110,7 +110,7 @@ jobs:
           repo-root: ${{ env.REPO_ROOT }}
 
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@setup-build-env-packages
+        uses: libbpf/ci/setup-build-env@v3
         with:
           arch: ${{ inputs.arch }}
           gcc-version: ${{ inputs.gcc_version }}
