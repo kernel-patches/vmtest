@@ -28,6 +28,7 @@ jobs:
       LLVM_VERSION: ${{ inputs.llvm_version }}
       SCX_BUILD_OUTPUT: ${{ github.workspace }}/scx-build-output
       SCX_PROGS: ${{ github.workspace }}/scx-progs
+      SCX_REVISION: e31fe903eae6e8fc407d68ec81b3effa2300923a
     steps:
       - uses: actions/checkout@v4
         with:
