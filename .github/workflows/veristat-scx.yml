@@ -35,7 +35,7 @@ jobs:
           sparse-checkout: |
             .github
             ci
-      - uses: libbpf/ci/build-scx-scheds@v3
+      - uses: libbpf/ci/build-scx-scheds@pipx-fix
         with:
           output-dir: ${{ env.SCX_BUILD_OUTPUT }}
       - name: Collect scx progs
