@@ -253,12 +253,12 @@ if __name__ == "__main__":
     matrix = [
         BuildConfig(
             arch=Arch.X86_64,
-            run_veristat=True,
             parallel_tests=True,
         ),
         BuildConfig(
             arch=Arch.X86_64,
             kernel_compiler=Compiler.LLVM,
+            run_veristat=True,
             build_release=True,
         ),
         BuildConfig(
