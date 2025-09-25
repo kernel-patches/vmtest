@@ -13,7 +13,7 @@ on:
 jobs:
   get-commits:
     # This codition is an indicator that we are running in a context of PR owned by kernel-patches org
-    if: ${{ github.repository_owner == 'kernel-patches' && vars.AWS_REGION }}
+    if: ${{ github.repository == 'kernel-patches/bpf' && vars.AWS_REGION }}
     runs-on: 'ubuntu-latest'
     continue-on-error: true
     outputs:
@@ -31,7 +31,7 @@ jobs:
         run: |
           tmp=$(mktemp)
           git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | head -n 50 > pr_commits.txt
-          cat pr_commits.txt | tail -n +2 | jq -R -s -c 'split("\n")[:-1]' > $tmp
+          cat pr_commits.txt | jq -R -s -c 'split("\n")[:-1]' > $tmp
           echo "commits=$(cat $tmp)" >> $GITHUB_OUTPUT
 
 
