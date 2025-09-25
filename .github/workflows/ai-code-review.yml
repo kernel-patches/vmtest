@@ -2,9 +2,9 @@ name: AI Code Review
 
 permissions:
   contents: read
-  pull-requests: read
-  issues: read
   id-token: write
+  issues: write
+  pull-requests: write
 
 on:
   pull_request:
@@ -38,7 +38,6 @@ jobs:
   ai-review:
     needs: get-commits
     runs-on: 'ubuntu-latest'
-    continue-on-error: true
     strategy:
       matrix:
         commit: ${{ fromJson(needs.get-commits.outputs.commits) }}
@@ -94,21 +93,32 @@ jobs:
             Using the prompt `review/review-core.md` and the prompt directory `review`
             do a code review of the top commit in the Linux repository.
 
-      - name: Dump review-inline.txt if exists
+      # If Claude produced review-inline.txt then it found something
+      # Post a comment on PR and fail the job
+      - name: Check review-inline.txt
+        id: check_review
         shell: bash
         run: |
           review_file=$(find ${{ github.workspace }} -name review-inline.txt)
-          cat $review_file
           if [ -s "$review_file" ]; then
-            cp -f $review_file ${{ github.workspace }}/review-inline.txt || true
-            echo "### Inline review" >> $GITHUB_STEP_SUMMARY
-            echo "```" >> $GITHUB_STEP_SUMMARY
-            cat $review_file >> $GITHUB_STEP_SUMMARY
-            echo "```" >> $GITHUB_STEP_SUMMARY
+              cat $review_file || true
+              echo "review_file=$review_file" >> $GITHUB_OUTPUT
           fi
 
-      - uses: actions/upload-artifact@v4
+      - name: Comment on PR
+        if: steps.check_review.outputs.review_file != ''
+        uses: actions/github-script@v8
+        env:
+          REVIEW_FILE: ${{ steps.check_review.outputs.review_file }}
         with:
-          name: ai-review-output
-          if-no-files-found: ignore
-          path: ${{ github.workspace }}/review-inline.txt
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const commentScript = require('./ci/claude/post-pr-comment.js');
+            await commentScript({github, context});
+
+      - name: Fail CI job if review file exists
+        if: steps.check_review.outputs.review_file != ''
+        run: |
+          echo "Review file found - failing the CI job"
+          exit 42
+
