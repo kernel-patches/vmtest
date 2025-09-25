@@ -29,31 +29,22 @@ jobs:
         id: check_review
         shell: bash
         run: |
-          mkdir -p ${{ github.workspace }}/foo/bar/review-inline.txt
+          mkdir -p ${{ github.workspace }}/foo/bar
           echo ">> This is a clean performance optimization" > ${{ github.workspace }}/foo/bar/review-inline.txt
           review_file=$(find ${{ github.workspace }} -name review-inline.txt)
           cat $review_file
           echo "review_file=$review_file" >> $GITHUB_OUTPUT
 
-      - name: Comment on PR with review results
+      - name: Comment on PR
         if: steps.check_review.outputs.review_file != ''
         uses: actions/github-script@v8
+        env:
+          REVIEW_FILE: ${{ steps.check_review.outputs.review_file }}
         with:
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
-            const fs = require('fs');
-            const reviewContent = fs.readFileSync('${{ steps.check_review.outputs.review_file }}', 'utf8');
-            const jobSummaryUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
-            const commentBody = `Job summary: ${jobSummaryUrl}
-Review contents:
-\`\`\`
-${reviewContent}
-\`\`\``;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: commentBody
-            });
+            const commentScript = require('./ci/claude/post-pr-comment.js');
+            await commentScript({github, context});
 
       - name: Fail job if review file exists
         if: steps.check_review.outputs.review_file != ''
