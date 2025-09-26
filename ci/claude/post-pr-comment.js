@@ -16,5 +16,11 @@ ${reviewContent}
     repo: context.repo.repo,
     body: commentBody
   });
-};
 
+  await github.rest.issues.addLabels({
+    issue_number: context.issue.number,
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    labels: ["ai-review"],
+  });
+};
