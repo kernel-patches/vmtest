@@ -80,7 +80,7 @@ jobs:
       - name: Checkout prompts repo
         uses: actions/checkout@v5
         with:
-          repository: 'kernel-patches/review-prompts'
+          repository: 'masoncl/review-prompts'
           path: 'review'
 
       - uses: anthropics/claude-code-action@v1
