@@ -77,6 +77,13 @@ jobs:
           fetch-depth: 32
           ref: ${{ matrix.commit }}
 
+      - name: Get patch subject
+        id: get-patch-subject
+        shell: bash
+        run: |
+          subject=$(git log -1 --pretty=format:"%s" ${{ matrix.commit }})
+          echo "subject=$subject" >> $GITHUB_OUTPUT
+
       - name: Checkout prompts repo
         uses: actions/checkout@v5
         with:
@@ -110,6 +117,7 @@ jobs:
         uses: actions/github-script@v8
         env:
           REVIEW_FILE: ${{ steps.check_review.outputs.review_file }}
+          PATCH_SUBJECT: ${{ steps.get-patch-subject.outputs.subject }}
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
