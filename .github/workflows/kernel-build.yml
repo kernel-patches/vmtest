@@ -64,17 +64,37 @@ jobs:
         KBUILD_OUTPUT: ${{ github.workspace }}/kbuild-output
         KERNEL: ${{ inputs.kernel }}
         KERNEL_ROOT: ${{ github.workspace }}
+        REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
         REPO_PATH: ""
         REPO_ROOT: ${{ github.workspace }}
         RUNNER_TYPE: ${{ contains(fromJSON(inputs.runs_on), 'codebuild') && 'codebuild' || 'default' }}
     steps:
+
       - uses: actions/checkout@v4
         with:
-          fetch-depth: ${{ inputs.download_sources && 1 || env.BPF_NEXT_FETCH_DEPTH }}
+          sparse-checkout: |
+            .github
+            ci
 
       - if: ${{ env.RUNNER_TYPE == 'codebuild' }}
         shell: bash
         run: .github/scripts/tmpfsify-workspace.sh
+
+      - if: ${{ ! inputs.download_sources }}
+        name: git clone ${{ github.repository }}@${{ github.sha }}
+        shell: bash
+        run: |
+          if [ -d "${{ env.REFERENCE_REPO_PATH }}" ]; then
+            git clone \
+              --revision ${{ github.sha }} \
+              --reference-if-able ${{ env.REFERENCE_REPO_PATH }} \
+              https://github.com/${{ github.repository }}.git .kernel
+          else
+            git clone \
+              --revision ${{ github.sha }} \
+              --depth ${{ inputs.download_sources && 1 || env.BPF_NEXT_FETCH_DEPTH }} \
+              https://github.com/${{ github.repository }}.git .kernel
+          fi
 
       - if: ${{ inputs.download_sources }}
         name: Download bpf-next tree
@@ -84,9 +104,10 @@ jobs:
         with:
           dest: '.kernel'
           rev: ${{ env.BPF_NEXT_BASE_BRANCH }}
+
       - uses: libbpf/ci/prepare-incremental-build@v3
         with:
-          repo-root: ${{ inputs.download_sources && '.kernel' || env.REPO_ROOT }}
+          repo-root: '.kernel'
           base-branch: >-
             ${{    inputs.download_sources && env.BPF_NEXT_BASE_BRANCH
                 || github.event_name == 'pull_request' && github.base_ref
@@ -95,15 +116,16 @@ jobs:
           arch: ${{ inputs.arch }}
           toolchain_full: ${{ inputs.toolchain_full }}
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
-      - if: ${{ inputs.download_sources }}
-        name: Move linux source in place
+
+      - name: Move linux source in place
         shell: bash
         run: |
           cd .kernel
-          rm -rf .git
+          rm -rf .git .github ci
           mv -t .. $(ls -A)
           cd ..
           rmdir .kernel
+
       - uses:  libbpf/ci/patch-kernel@v3
         with:
           patches-root: '${{ github.workspace }}/ci/diffs'
