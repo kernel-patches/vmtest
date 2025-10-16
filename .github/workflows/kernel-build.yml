@@ -70,6 +70,19 @@ jobs:
         RUNNER_TYPE: ${{ contains(fromJSON(inputs.runs_on), 'codebuild') && 'codebuild' || 'default' }}
     steps:
 
+      # git version 2.43.0 (current Ubuntu 24 installation)
+      # does not support git clone --revision option
+      # so make sure latest git is installed
+      - name: Install latest git
+        shell: bash
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y software-properties-common
+            sudo add-apt-repository -y ppa:git-core/ppa
+            sudo apt-get update
+            sudo apt-get install -y git
+            git --version
+
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
