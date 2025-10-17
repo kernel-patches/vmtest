@@ -13,7 +13,7 @@ on:
 jobs:
   get-commits:
     # This codition is an indicator that we are running in a context of PR owned by kernel-patches org
-    if: ${{ (github.repository == 'kernel-patches/bpf' || github.repository == 'kernel-patches/bpf-rc') && vars.AWS_REGION }}
+    if: ${{ github.repository == 'kernel-patches/bpf' && vars.AWS_REGION }}
     runs-on: 'ubuntu-latest'
     continue-on-error: true
     outputs:
