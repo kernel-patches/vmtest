@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any, Dict, Final, List, Optional, Set, Union
 
 import requests
+import requests.utils
 
 MANAGED_OWNER: Final[str] = "kernel-patches"
 MANAGED_REPOS: Final[Set[str]] = {
@@ -17,7 +18,7 @@ MANAGED_REPOS: Final[Set[str]] = {
 
 DEFAULT_SELF_HOSTED_RUNNER_TAGS: Final[List[str]] = ["self-hosted", "docker-noble-main"]
 DEFAULT_GITHUB_HOSTED_RUNNER: Final[str] = "ubuntu-24.04"
-DEFAULT_GCC_VERSION: Final[int] = 14
+DEFAULT_GCC_VERSION: Final[int] = 15
 DEFAULT_LLVM_VERSION: Final[int] = 20
 
 RUNNERS_BUSY_THRESHOLD: Final[float] = 0.8
@@ -152,15 +153,11 @@ class BuildConfig:
             case Arch.S390X:
                 return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.X86_64.value]
             case Arch.AARCH64:
-                return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.AARCH64.value]
+                return DEFAULT_SELF_HOSTED_RUNNER_TAGS + [Arch.X86_64.value]
 
         # For managed repos, check the busyness of relevant self-hosted runners
         # If they are too busy, use codebuild
         runner_arch = self.arch
-        # We don't build s390x kernel on s390x runners, because it's too slow
-        # Cross-compiling on x86_64 is faster
-        if runner_arch == Arch.S390X:
-            runner_arch = Arch.X86_64
         runners = runners_by_arch(runner_arch)
         counts = count_by_status(runners)
         online = counts["idle"] + counts["busy"]
