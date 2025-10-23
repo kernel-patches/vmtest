@@ -6,8 +6,8 @@ PROGS_DIR=$1
 
 mkdir -p "${PROGS_DIR}"
 
-find "${SCX_BUILD_OUTPUT}" -type f -name "bpf.bpf.o" -print0 | \
+find "${SCX_BUILD_OUTPUT}" -type f -name "*.bpf.o" -printf '%P\0' | \
 while IFS= read -r -d '' prog; do
-    obj_name=$(echo "$prog" | grep -o "scx.*.bpf.o" | tr / _)
-    cp -v "$prog" "${PROGS_DIR}/${obj_name}"
+    obj_name=$(echo "${prog}" | tr / _)
+    cp -v "${SCX_BUILD_OUTPUT}/$prog" "${PROGS_DIR}/${obj_name}"
 done
