@@ -88,7 +88,7 @@ jobs:
           path: ${{ env.SCX_PROGS }}
 
       - name: Run veristat
-        uses: libbpf/ci/run-vmtest@v3
+        uses: libbpf/ci/run-vmtest@run-vmtest-bump
         with:
           arch: x86_64
           vmlinuz: '${{ github.workspace }}/vmlinuz'
