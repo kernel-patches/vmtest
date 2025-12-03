@@ -14,30 +14,36 @@ jobs:
   get-commits:
     # This codition is an indicator that we are running in a context of PR owned by kernel-patches org
     if: ${{ github.repository == 'kernel-patches/bpf' && vars.AWS_REGION }}
-    runs-on: 'ubuntu-latest'
+    runs-on: [self-hosted, x86_64]
     continue-on-error: true
     outputs:
       commits: ${{ steps.get-commits.outputs.commits }}
     steps:
-      - name: Checkout Linux source tree
-        uses: actions/checkout@v5
+
+      - name: Download Linux source tree
+        uses: libbpf/ci/get-linux-source@v3
         with:
-          fetch-depth: 32
+          repo: ${{ github.event.pull_request.head.repo.clone_url }}
+          rev: ${{ github.event.pull_request.head.sha }}
+          dest: .kernel
+        env:
+          REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
+          FETCH_DEPTH: 100
 
       # Get the list of commits and trigger a review job for each separate commit
       # As a safeguard, check no more than the first 50 commits
       - name: Get PR commits
         id: get-commits
         run: |
+          cd .kernel
           tmp=$(mktemp)
           git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | head -n 50 > pr_commits.txt
           cat pr_commits.txt | jq -R -s -c 'split("\n")[:-1]' > $tmp
           echo "commits=$(cat $tmp)" >> $GITHUB_OUTPUT
 
-
   ai-review:
     needs: get-commits
-    runs-on: 'ubuntu-latest'
+    runs-on: [self-hosted, x86_64]
     strategy:
       matrix:
         commit: ${{ fromJson(needs.get-commits.outputs.commits) }}
@@ -71,11 +77,32 @@ jobs:
           mkdir -p ~/.claude
           cp ci/claude/settings.json ~/.claude/settings.json
 
-      - name: Checkout Linux source tree
-        uses: actions/checkout@v5
+      - name: Download Linux source tree
+        uses: libbpf/ci/get-linux-source@v3
         with:
-          fetch-depth: 32
-          ref: ${{ matrix.commit }}
+          repo: ${{ github.event.pull_request.head.repo.clone_url }}
+          rev: ${{ github.event.pull_request.head.sha }}
+          dest: .kernel
+        env:
+          REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
+          FETCH_DEPTH: 100
+
+      # This manipulation is necessary to make sure that
+      # ${{ github.workspace }} is the root of the Linux git repo
+      - name: Move linux source in place
+        shell: bash
+        run: |
+          rm -rf .git .github ci
+          cd .kernel
+          mv -t .. $(ls -A)
+          cd ..
+          rmdir .kernel
+
+      - name: Checkout target commit
+        shell: bash
+        run: |
+          git checkout -b patch-series.local
+          git checkout ${{ matrix.commit }}
 
       - name: Get patch subject
         id: get-patch-subject
@@ -98,7 +125,8 @@ jobs:
           prompt: |
             Current directory is the root of a Linux Kernel git repository.
             Using the prompt `review/review-core.md` and the prompt directory `review`
-            do a code review of the top commit in the Linux repository.
+            do a code review of the top commit in the Linux repository. The commit is a part
+            of a patch series within the git range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
 
       # If Claude produced review-inline.txt then it found something
       # Post a comment on PR and fail the job
@@ -129,4 +157,3 @@ jobs:
         run: |
           echo "Review file found - failing the CI job"
           exit 42
-
