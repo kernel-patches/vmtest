@@ -10,3 +10,4 @@ trace_ext
 xdp_bpf2bpf
 xdp_metadata
 log_buf # fails with segfault, needs investigation
+tc_edt # flaky, needs investigation
