@@ -124,9 +124,12 @@ jobs:
           claude_args: '--max-turns 100'
           prompt: |
             Current directory is the root of a Linux Kernel git repository.
-            Using the prompt `review/review-core.md` and the prompt directory `review`
-            do a code review of the top commit in the Linux repository. The commit is a part
-            of a patch series within the git range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+
+            Read the prompt review/review-core.md
+
+            Using the prompt, review the HEAD commit.
+
+            Use commit range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} for the false-positive-guide.md section.
 
       # If Claude produced review-inline.txt then it found something
       # Post a comment on PR and fail the job
