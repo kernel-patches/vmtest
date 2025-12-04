@@ -121,7 +121,7 @@ jobs:
         with:
           github_token: ${{ steps.app-token.outputs.token }}
           use_bedrock: "true"
-          claude_args: '--max-turns 100'
+          claude_args: '--max-turns 100 --model global.anthropic.claude-opus-4-5-20251101-v1:0'
           prompt: |
             Current directory is the root of a Linux Kernel git repository.
             Using the prompt `review/review-core.md` and the prompt directory `review`
