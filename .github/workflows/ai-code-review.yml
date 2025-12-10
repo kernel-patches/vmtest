@@ -127,7 +127,7 @@ jobs:
 
             Read the prompt review/review-core.md
 
-            Using the prompt, review the HEAD commit.
+            Using the prompt, do a deep dive regression analysis of the HEAD commit.
 
             Use commit range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} for the false-positive-guide.md section.
 
