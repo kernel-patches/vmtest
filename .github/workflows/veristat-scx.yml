@@ -27,7 +27,6 @@ jobs:
     env:
       LLVM_VERSION: ${{ inputs.llvm_version }}
       SCX_BUILD_OUTPUT: ${{ github.workspace }}/scx-build-output
-      SCX_PROGS: ${{ github.workspace }}/scx-progs
       SCX_REVISION: main
     steps:
       - uses: actions/checkout@v4
@@ -35,17 +34,17 @@ jobs:
           sparse-checkout: |
             .github
             ci
+
       - uses: libbpf/ci/build-scx-scheds@v4
         with:
           output-dir: ${{ env.SCX_BUILD_OUTPUT }}
-      - name: Collect scx progs
-        run: ${{ github.workspace }}/.github/scripts/collect-scx-bpf-progs.sh ${{ env.SCX_PROGS }}
-      - name: Upload scx progs
+
+      - name: Upload sched-ext build output
         uses: actions/upload-artifact@v4
         with:
-          name: scx-progs-${{ inputs.arch }}-${{ inputs.toolchain_full }}
+          name: sched-ext-${{ inputs.arch }}-${{ inputs.toolchain_full }}
           if-no-files-found: error
-          path: ${{ env.SCX_PROGS }}
+          path: ${{ env.SCX_BUILD_OUTPUT }}
 
   veristat:
     name: veristat-scx
@@ -62,7 +61,7 @@ jobs:
       ARCH_AND_TOOL: ${{ inputs.arch }}-${{ inputs.toolchain_full }}
       VERISTAT_DUMP_LOG_ON_FAILURE: 'true'
       VERISTAT_TARGET: scx
-      SCX_PROGS: ${{ github.workspace }}/scx-progs
+      SCX_BUILD_OUTPUT: ${{ github.workspace }}/scx-build-output
 
     steps:
 
@@ -81,11 +80,11 @@ jobs:
       - name: Untar kernel build artifacts
         run: zstd -d -T0  vmlinux-${{ env.ARCH_AND_TOOL }}.tar.zst --stdout | tar -xf -
 
-      - name: Download scx progs
+      - name: Download sched-ext build output
         uses: actions/download-artifact@v4
         with:
-          name: scx-progs-${{ inputs.arch }}-${{ inputs.toolchain_full }}
-          path: ${{ env.SCX_PROGS }}
+          name: sched-ext-${{ inputs.arch }}-${{ inputs.toolchain_full }}
+          path: ${{ env.SCX_BUILD_OUTPUT }}
 
       - name: Run veristat
         uses: libbpf/ci/run-vmtest@v4
