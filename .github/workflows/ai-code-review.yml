@@ -123,6 +123,7 @@ jobs:
           github_token: ${{ steps.app-token.outputs.token }}
           use_bedrock: "true"
           claude_args: '--max-turns 100 --model us.anthropic.claude-opus-4-5-20251101-v1:0'
+          allowed_bots: "kernel-patches-daemon-bpf,kernel-patches-review-bot"
           prompt: |
             Current directory is the root of a Linux Kernel git repository.
 
