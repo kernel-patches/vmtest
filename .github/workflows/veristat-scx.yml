@@ -23,19 +23,19 @@ jobs:
 
   build-scheds:
     name: build sched-ext/scx
-    runs-on: ${{ fromJSON(inputs.runs_on) }}
+    runs-on: ubuntu-latest
     env:
       LLVM_VERSION: ${{ inputs.llvm_version }}
       SCX_BUILD_OUTPUT: ${{ github.workspace }}/scx-build-output
       SCX_PROGS: ${{ github.workspace }}/scx-progs
-      SCX_REVISION: 5c4575195fe1
+      SCX_REVISION: main
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .github
             ci
-      - uses: libbpf/ci/build-scx-scheds@v3
+      - uses: libbpf/ci/build-scx-scheds@scx-builder
         with:
           output-dir: ${{ env.SCX_BUILD_OUTPUT }}
       - name: Collect scx progs
