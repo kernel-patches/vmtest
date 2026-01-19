@@ -46,7 +46,6 @@ import enum
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Final
 
-
 TRESHOLD_PCT: Final[int] = 0
 
 SUMMARY_HEADERS = ["File", "Program", "Verdict", "States Diff (%)"]
@@ -57,16 +56,13 @@ TOTAL_STATES_DIFF_REGEX = (
 )
 
 
-TEXT_SUMMARY_TEMPLATE: Final[str] = (
-    """
+TEXT_SUMMARY_TEMPLATE: Final[str] = """
 # {title}
 
 {table}
 """.strip()
-)
 
-HTML_SUMMARY_TEMPLATE: Final[str] = (
-    """
+HTML_SUMMARY_TEMPLATE: Final[str] = """
 # {title}
 
 <details>
@@ -75,7 +71,6 @@ HTML_SUMMARY_TEMPLATE: Final[str] = (
 {table}
 </details>
 """.strip()
-)
 
 GITHUB_MARKUP_REPLACEMENTS: Final[Dict[str, str]] = {
     "->": "&rarr;",
