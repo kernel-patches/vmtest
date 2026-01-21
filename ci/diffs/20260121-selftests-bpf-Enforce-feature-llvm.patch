@@ -1,0 +1,28 @@
+From 5eea2d0a792fd33c8c26afaf86a8619bff726388 Mon Sep 17 00:00:00 2001
+From: Ihor Solodrai <ihor.solodrai@linux.dev>
+Date: Wed, 21 Jan 2026 12:21:12 -0800
+Subject: [PATCH] selftests/bpf: Enforce feature-llvm
+
+---
+ tools/testing/selftests/bpf/Makefile | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/tools/testing/selftests/bpf/Makefile b/tools/testing/selftests/bpf/Makefile
+index 9488d076c740..523d75d2e5df 100644
+--- a/tools/testing/selftests/bpf/Makefile
++++ b/tools/testing/selftests/bpf/Makefile
+@@ -174,6 +174,11 @@ override OUTPUT := $(patsubst %/,%,$(OUTPUT))
+ endif
+ endif
+ 
++# Enforce feature-llvm: fail build unless SKIP_LLVM has been set
++ifneq ($(and $(CHECK_FEAT),$(if $(filter 1,$(SKIP_LLVM)),,1),$(if $(filter 1,$(feature-llvm)),,1)),)
++  $(error feature-llvm is required, install LLVM development libraries or set SKIP_LLVM=1)
++endif
++
+ ifneq ($(SKIP_LLVM),1)
+ ifeq ($(feature-llvm),1)
+   LLVM_CFLAGS  += -DHAVE_LLVM_SUPPORT
+-- 
+2.52.0
+
