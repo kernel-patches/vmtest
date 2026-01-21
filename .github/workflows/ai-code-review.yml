@@ -116,6 +116,7 @@ jobs:
         with:
           repository: 'masoncl/review-prompts'
           path: 'review'
+          ref: v1.0
 
       - uses: anthropics/claude-code-action@v1
         with:
