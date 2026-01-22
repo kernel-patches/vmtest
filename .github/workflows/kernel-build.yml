@@ -46,44 +46,31 @@ on:
 jobs:
   build:
     name: build kernel and selftests ${{ inputs.release && '-O2' || '' }}
-    # To run on CodeBuild, runs-on value must correspond to the AWS
-    # CodeBuild project associated with the kernel-patches webhook
-    # However matrix.py passes just a 'codebuild' string
-    runs-on: >-
-      ${{
-          contains(fromJSON(inputs.runs_on), 'codebuild')
-          && format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt)
-          || fromJSON(inputs.runs_on)
-      }}
+    runs-on:
+      - ${{ github.repository == 'kernel-patches/bpf-rc' && 'ubuntu-latest'
+         || format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
+      # AWS docs about image override: https://docs.aws.amazon.com/codebuild/latest/userguide/sample-github-action-runners-update-labels.html
+      - image:${{ inputs.arch == 'aarch64' && 'custom-arm-ghcr.io/kernel-patches/runner:kbuilder-debian-aarch64'
+               || 'custom-linux-ghcr.io/kernel-patches/runner:kbuilder-debian-x86_64' }}
     env:
         ARTIFACTS_ARCHIVE: "vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst"
-        BPF_NEXT_BASE_BRANCH: 'master'
         BPF_NEXT_FETCH_DEPTH: 64 # A bit of history is needed to facilitate incremental builds
-        CROSS_COMPILE: ${{ inputs.arch != 'x86_64' && 'true' || '' }}
+        CROSS_COMPILE: ${{ inputs.arch == 's390x' && 'true' || '' }}
         BUILD_SCHED_EXT_SELFTESTS: ${{ inputs.arch == 'x86_64' || inputs.arch == 'aarch64' && 'true' || '' }}
         KBUILD_OUTPUT: ${{ github.workspace }}/kbuild-output
         KERNEL: ${{ inputs.kernel }}
         KERNEL_ROOT: ${{ github.workspace }}
+        KERNEL_ORIGIN: ${{ github.repository == 'kernel-patches/bpf-rc' && 'https://github.com/kernel-patches/bpf-rc.git'
+                        || 'https://github.com/kernel-patches/bpf.git'
+                        }}
+        KERNEL_REVISION: ${{ inputs.download_sources && 'bpf-next' || github.sha }}
         REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
         REPO_PATH: ""
         REPO_ROOT: ${{ github.workspace }}
-        RUNNER_TYPE: ${{ contains(fromJSON(inputs.runs_on), 'codebuild') && 'codebuild' || 'default' }}
+        RUNNER_TYPE: codebuild
     steps:
 
-      # git version 2.43.0 (current Ubuntu 24 installation)
-      # does not support git clone --revision option
-      # so make sure latest git is installed
-      - name: Install latest git
-        shell: bash
-        run: |
-            sudo apt-get update
-            sudo apt-get install -y software-properties-common
-            sudo add-apt-repository -y ppa:git-core/ppa
-            sudo apt-get update
-            sudo apt-get install -y git
-            git --version
-
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .github
@@ -93,42 +80,14 @@ jobs:
         shell: bash
         run: .github/scripts/tmpfsify-workspace.sh
 
-      - if: ${{ ! inputs.download_sources }}
-        name: git clone ${{ github.repository }}@${{ github.sha }}
-        shell: bash
-        run: |
-          if [ -d "${{ env.REFERENCE_REPO_PATH }}" ]; then
-            git clone \
-              --revision ${{ github.sha }} \
-              --reference-if-able ${{ env.REFERENCE_REPO_PATH }} \
-              https://github.com/${{ github.repository }}.git .kernel
-          else
-            git clone \
-              --revision ${{ github.sha }} \
-              --depth ${{ inputs.download_sources && 1 || env.BPF_NEXT_FETCH_DEPTH }} \
-              https://github.com/${{ github.repository }}.git .kernel
-          fi
-
-      - if: ${{ inputs.download_sources }}
-        name: Download bpf-next tree
+      - name: Download bpf-next tree @ ${{ env.KERNEL_REVISION }}
+        uses: libbpf/ci/get-linux-source@v4
         env:
           FETCH_DEPTH: ${{ env.BPF_NEXT_FETCH_DEPTH }}
-        uses: libbpf/ci/get-linux-source@v3
         with:
           dest: '.kernel'
-          rev: ${{ env.BPF_NEXT_BASE_BRANCH }}
-
-      - uses: libbpf/ci/prepare-incremental-build@v3
-        with:
-          repo-root: '.kernel'
-          base-branch: >-
-            ${{    inputs.download_sources && env.BPF_NEXT_BASE_BRANCH
-                || github.event_name == 'pull_request' && github.base_ref
-                || github.ref_name
-             }}
-          arch: ${{ inputs.arch }}
-          toolchain_full: ${{ inputs.toolchain_full }}
-          kbuild-output: ${{ env.KBUILD_OUTPUT }}
+          repo: ${{ env.KERNEL_ORIGIN }}
+          rev: ${{ env.KERNEL_REVISION }}
 
       - name: Move linux source in place
         shell: bash
@@ -139,33 +98,21 @@ jobs:
           cd ..
           rmdir .kernel
 
-      - uses:  libbpf/ci/patch-kernel@v3
+      - uses:  libbpf/ci/patch-kernel@v4
         with:
           patches-root: '${{ github.workspace }}/ci/diffs'
           repo-root: ${{ env.REPO_ROOT }}
 
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@v3
+        uses: libbpf/ci/setup-build-env@v4
         with:
           arch: ${{ inputs.arch }}
           gcc-version: ${{ inputs.gcc_version }}
           llvm-version: ${{ inputs.llvm_version }}
           pahole: master
 
-        # We have to setup qemu+binfmt in order to enable cross-compation of selftests.
-        # During selftests build, freshly built bpftool is executed.
-        # On self-hosted bare-metal hosts binfmt is pre-configured.
-      - if: ${{ env.RUNNER_TYPE == 'codebuild' && env.CROSS_COMPILE }}
-        name: Set up docker
-        uses: docker/setup-docker-action@v4
-      - if: ${{ env.RUNNER_TYPE == 'codebuild' && env.CROSS_COMPILE }}
-        name: Setup binfmt and qemu
-        uses: docker/setup-qemu-action@v3
-        with:
-          image: tonistiigi/binfmt:qemu-v9.2.0
-
       - name: Build kernel image
-        uses: libbpf/ci/build-linux@v3
+        uses: libbpf/ci/build-linux@v4
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
@@ -174,7 +121,7 @@ jobs:
           llvm-version: ${{ inputs.llvm_version }}
 
       - name: Build selftests/bpf
-        uses: libbpf/ci/build-selftests@v3
+        uses: libbpf/ci/build-selftests@v4
         env:
           MAX_MAKE_JOBS: 32
           RELEASE: ${{ inputs.release && '1' || '' }}
@@ -186,7 +133,7 @@ jobs:
 
       - if: ${{ env.BUILD_SCHED_EXT_SELFTESTS }}
         name: Build selftests/sched_ext
-        uses: libbpf/ci/build-scx-selftests@v3
+        uses: libbpf/ci/build-scx-selftests@v4
         with:
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           repo-root: ${{ env.REPO_ROOT }}
@@ -197,7 +144,7 @@ jobs:
 
       - if: ${{ github.event_name != 'push' }}
         name: Build samples
-        uses: libbpf/ci/build-samples@v3
+        uses: libbpf/ci/build-samples@v4
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
@@ -206,7 +153,7 @@ jobs:
           llvm-version: ${{ inputs.llvm_version }}
       - name: Tar artifacts
         id: tar-artifacts
-        uses: libbpf/ci/tar-artifacts@v3
+        uses: libbpf/ci/tar-artifacts@v4
         env:
           ARCHIVE_BPF_SELFTESTS: 'true'
           ARCHIVE_MAKE_HELPERS: 'true'

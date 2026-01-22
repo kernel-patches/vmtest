@@ -71,7 +71,7 @@ jobs:
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
       - name: Run veristat
-        uses: libbpf/ci/run-vmtest@v3
+        uses: libbpf/ci/run-vmtest@v4
         with:
           arch: x86_64
           vmlinuz: '${{ github.workspace }}/vmlinuz'
