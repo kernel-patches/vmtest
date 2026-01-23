@@ -15,12 +15,7 @@ concurrency:
 
 jobs:
   set-matrix:
-    # FIXME: set-matrix is lightweight, run it on any self-hosted machines for kernel-patches org
-    # so we do not wait for GH hosted runners when there potentially all are busy because of bpf-rc
-    # repo for instance.
-    # This could be somehow fixed long term by making this action/workflow re-usable and letting the called
-    # specify what to run on.
-    runs-on: ${{ github.repository_owner == 'kernel-patches' && 'x86_64' || 'ubuntu-latest' }}
+    runs-on: ubuntu-slim
     permissions: read-all
     outputs:
       build-matrix: ${{ steps.set-matrix-impl.outputs.build_matrix }}
