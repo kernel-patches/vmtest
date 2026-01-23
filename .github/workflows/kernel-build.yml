@@ -113,12 +113,12 @@ jobs:
         name: Download bpf-next tree
         env:
           FETCH_DEPTH: ${{ env.BPF_NEXT_FETCH_DEPTH }}
-        uses: libbpf/ci/get-linux-source@v3
+        uses: libbpf/ci/get-linux-source@debian-build-env
         with:
           dest: '.kernel'
           rev: ${{ env.BPF_NEXT_BASE_BRANCH }}
 
-      - uses: libbpf/ci/prepare-incremental-build@v3
+      - uses: libbpf/ci/prepare-incremental-build@debian-build-env
         with:
           repo-root: '.kernel'
           base-branch: >-
@@ -139,13 +139,13 @@ jobs:
           cd ..
           rmdir .kernel
 
-      - uses:  libbpf/ci/patch-kernel@v3
+      - uses:  libbpf/ci/patch-kernel@debian-build-env
         with:
           patches-root: '${{ github.workspace }}/ci/diffs'
           repo-root: ${{ env.REPO_ROOT }}
 
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@v3
+        uses: libbpf/ci/setup-build-env@debian-build-env
         with:
           arch: ${{ inputs.arch }}
           gcc-version: ${{ inputs.gcc_version }}
@@ -165,7 +165,7 @@ jobs:
           image: tonistiigi/binfmt:qemu-v9.2.0
 
       - name: Build kernel image
-        uses: libbpf/ci/build-linux@v3
+        uses: libbpf/ci/build-linux@debian-build-env
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
@@ -174,7 +174,7 @@ jobs:
           llvm-version: ${{ inputs.llvm_version }}
 
       - name: Build selftests/bpf
-        uses: libbpf/ci/build-selftests@v3
+        uses: libbpf/ci/build-selftests@debian-build-env
         env:
           MAX_MAKE_JOBS: 32
           RELEASE: ${{ inputs.release && '1' || '' }}
@@ -186,7 +186,7 @@ jobs:
 
       - if: ${{ env.BUILD_SCHED_EXT_SELFTESTS }}
         name: Build selftests/sched_ext
-        uses: libbpf/ci/build-scx-selftests@v3
+        uses: libbpf/ci/build-scx-selftests@debian-build-env
         with:
           kbuild-output: ${{ env.KBUILD_OUTPUT }}
           repo-root: ${{ env.REPO_ROOT }}
@@ -197,7 +197,7 @@ jobs:
 
       - if: ${{ github.event_name != 'push' }}
         name: Build samples
-        uses: libbpf/ci/build-samples@v3
+        uses: libbpf/ci/build-samples@debian-build-env
         with:
           arch: ${{ inputs.arch }}
           toolchain: ${{ inputs.toolchain }}
@@ -206,7 +206,7 @@ jobs:
           llvm-version: ${{ inputs.llvm_version }}
       - name: Tar artifacts
         id: tar-artifacts
-        uses: libbpf/ci/tar-artifacts@v3
+        uses: libbpf/ci/tar-artifacts@debian-build-env
         env:
           ARCHIVE_BPF_SELFTESTS: 'true'
           ARCHIVE_MAKE_HELPERS: 'true'

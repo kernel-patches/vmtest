@@ -35,7 +35,7 @@ jobs:
           sparse-checkout: |
             .github
             ci
-      - uses: libbpf/ci/build-scx-scheds@v3
+      - uses: libbpf/ci/build-scx-scheds@debian-build-env
         with:
           output-dir: ${{ env.SCX_BUILD_OUTPUT }}
       - name: Collect scx progs
@@ -88,7 +88,7 @@ jobs:
           path: ${{ env.SCX_PROGS }}
 
       - name: Run veristat
-        uses: libbpf/ci/run-vmtest@v3
+        uses: libbpf/ci/run-vmtest@debian-build-env
         with:
           arch: x86_64
           vmlinuz: '${{ github.workspace }}/vmlinuz'
