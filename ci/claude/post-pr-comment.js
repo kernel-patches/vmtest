@@ -4,6 +4,23 @@ module.exports = async ({github, context}) => {
   const jobSummaryUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
   const reviewContent = fs.readFileSync(process.env.REVIEW_FILE, 'utf8');
   const subject = process.env.PATCH_SUBJECT || 'Could not determine patch subject';
+
+  let metadataFooter = '';
+  if (fs.existsSync(process.env.REVIEW_METADATA)) {
+    try {
+      const metadata = JSON.parse(fs.readFileSync(process.env.REVIEW_METADATA, 'utf8'));
+      metadataFooter = `
+AI-authorship-score: ${metadata['AI-authorship-score'] || 'N/A'}
+AI-authorship-explanation: ${metadata['AI-authorship-explanation'] || 'N/A'}
+issues-found: ${metadata['issues-found'] ?? 'N/A'}
+issue-severity-score: ${metadata['issue-severity-score'] || 'N/A'}
+issue-severity-explanation: ${metadata['issue-severity-explanation'] || 'N/A'}
+`;
+    } catch (e) {
+      console.error(`Failed to parse review-metadata.json: ${e.message}`);
+    }
+  }
+
   const commentBody = `
 \`\`\`
 ${reviewContent}
@@ -15,7 +32,7 @@ See: https://github.com/kernel-patches/vmtest/blob/master/ci/claude/README.md
 
 In-Reply-To-Subject: \`${subject}\`
 CI run summary: ${jobSummaryUrl}
-`;
+${metadataFooter}`;
 
   await github.rest.issues.createComment({
     issue_number: context.issue.number,

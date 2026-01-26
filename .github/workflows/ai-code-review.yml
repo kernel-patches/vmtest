@@ -52,7 +52,7 @@ jobs:
       AWS_REGION: us-west-2
     steps:
       - name: Checkout CI code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .github
@@ -112,11 +112,17 @@ jobs:
           echo "subject=$subject" >> $GITHUB_OUTPUT
 
       - name: Checkout prompts repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: 'masoncl/review-prompts'
-          path: 'review'
-          ref: v1.0
+          path: 'review-prompts'
+          ref: main
+
+      - name: Set up review prompts
+        shell: bash
+        run: |
+          mv review-prompts/kernel ${{ github.workspace }}/review
+          rm -rf review-prompts
 
       - uses: anthropics/claude-code-action@v1
         with:
@@ -136,7 +142,7 @@ jobs:
 
       # If Claude produced review-inline.txt then it found something
       # Post a comment on PR and fail the job
-      - name: Check review-inline.txt
+      - name: Check review-inline.txt and review-metadata.json
         id: check_review
         shell: bash
         run: |
@@ -145,12 +151,18 @@ jobs:
               cat $review_file || true
               echo "review_file=$review_file" >> $GITHUB_OUTPUT
           fi
+          review_metadata=$(find ${{ github.workspace }} -name review-metadata.json)
+          if [ -s "$review_metadata" ]; then
+              cat $review_metadata || true
+              echo "review_metadata=$review_metadata" >> $GITHUB_OUTPUT
+          fi
 
       - name: Comment on PR
         if: steps.check_review.outputs.review_file != ''
         uses: actions/github-script@v8
         env:
           REVIEW_FILE: ${{ steps.check_review.outputs.review_file }}
+          REVIEW_METADATA: ${{ steps.check_review.outputs.review_metadata }}
           PATCH_SUBJECT: ${{ steps.get-patch-subject.outputs.subject }}
         with:
           github-token: ${{ steps.app-token.outputs.token }}
