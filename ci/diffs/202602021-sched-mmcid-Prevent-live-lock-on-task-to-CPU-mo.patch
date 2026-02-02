@@ -1,26 +1,26 @@
-From be0bb1ec8b6a13fda3a6f30ed5a94c88d64cf60d Mon Sep 17 00:00:00 2001
+From d6edf106f21e8be9edd79d5db40a14c78b307bf8 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@kernel.org>
-Date: Thu, 29 Jan 2026 22:20:48 +0100
-Subject: [PATCH 202601291/202601294] sched/mmcid: Prevent live lock on task to
+Date: Mon, 2 Feb 2026 10:39:40 +0100
+Subject: [PATCH 202602021/202602024] sched/mmcid: Prevent live lock on task to
  CPU mode transition
 
 Ihor reported a BPF CI failure which turned out to be a live lock in the
 MM_CID management. The scenario is:
 
-A test program creates the 4th child, which means the MM_CID users become
+A test program creates the 5th thread, which means the MM_CID users become
 more than the number of CPUs (four in this example), so it switches to per
 CPU ownership mode.
 
 At this point each live task of the program has a CID associated. Assume
 thread creation order assignment for simplicity.
 
-   T0 (main thread)       CID0  runs fork() and creates T4
-   T1 (1st child)	  CID1
-   T2 (2nd child)	  CID2
-   T3 (3rd child)	  CID3
-   T4 (4th child)         ---   not visible yet
+   T0     CID0  runs fork() and creates T4
+   T1 	  CID1
+   T2 	  CID2
+   T3 	  CID3
+   T4       ---   not visible yet
 
-T0 sets mm_cid::percpu = true and transfers it's own CID to CPU0 where it
+T0 sets mm_cid::percpu = true and transfers its own CID to CPU0 where it
 runs on and then starts the fixup which walks through the threads to
 transfer the per task CIDs either to the CPU the task is running on or drop
 it back into the pool if the task is not on a CPU.
@@ -30,10 +30,10 @@ up with them. Going through all possible permutations with a python script
 revealed a few problematic cases. The most trivial one is:
 
    T1 schedules in on CPU1 and observes percpu == true, so it transfers
-      it's CID to CPU1
+      its CID to CPU1
 
-   T1 is migrated to CPU1 and schedule in observes percpu == true, but
-      CPU2 does not have a CID associated and T1 transferred it's own to
+   T1 is migrated to CPU2 and schedule in observes percpu == true, but
+      CPU2 does not have a CID associated and T1 transferred its own to
       CPU1
 
       So it has to allocate one with CPU2 runqueue lock held, but the
@@ -66,13 +66,14 @@ Fixes: fbd0e71dc370 ("sched/mmcid: Provide CID ownership mode fixup functions")
 Reported-by: Ihor Solodrai <ihor.solodrai@linux.dev>
 Signed-off-by: Thomas Gleixner <tglx@kernel.org>
 Closes: https://lore.kernel.org/2b7463d7-0f58-4e34-9775-6e2115cfb971@linux.dev
+Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 ---
- kernel/sched/core.c  | 118 ++++++++++++++++++++++++++++---------------
+ kernel/sched/core.c  | 128 ++++++++++++++++++++++++++++---------------
  kernel/sched/sched.h |   4 ++
- 2 files changed, 80 insertions(+), 42 deletions(-)
+ 2 files changed, 88 insertions(+), 44 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 60afadb6eede..bd86e4bd0cd7 100644
+index 60afadb6eede..f78966867d7b 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -10265,7 +10265,8 @@ void call_trace_sched_update_nr_running(struct rq *rq, int count)
@@ -232,7 +233,7 @@ index 60afadb6eede..bd86e4bd0cd7 100644
  		pcp->cid = t->mm_cid.cid;
  	}
  }
-@@ -10505,9 +10537,9 @@ static bool mm_cid_fixup_task_to_cpu(struct task_struct *t, struct mm_struct *mm
+@@ -10505,18 +10537,17 @@ static bool mm_cid_fixup_task_to_cpu(struct task_struct *t, struct mm_struct *mm
  	if (!t->mm_cid.active)
  		return false;
  	if (cid_on_task(t->mm_cid.cid)) {
@@ -244,7 +245,33 @@ index 60afadb6eede..bd86e4bd0cd7 100644
  		else
  			mm_unset_cid_on_task(t);
  	}
-@@ -10592,11 +10624,13 @@ void sched_mm_cid_fork(struct task_struct *t)
+ 	return true;
+ }
+ 
+-static void mm_cid_fixup_tasks_to_cpus(void)
++static void mm_cid_do_fixup_tasks_to_cpus(struct mm_struct *mm)
+ {
+-	struct mm_struct *mm = current->mm;
+ 	struct task_struct *p, *t;
+ 	unsigned int users;
+ 
+@@ -10554,6 +10585,15 @@ static void mm_cid_fixup_tasks_to_cpus(void)
+ 	}
+ }
+ 
++static void mm_cid_fixup_tasks_to_cpus(void)
++{
++	struct mm_struct *mm = current->mm;
++
++	mm_cid_do_fixup_tasks_to_cpus(mm);
++	/* Clear the transition bit */
++	WRITE_ONCE(mm->mm_cid.transit, 0);
++}
++
+ static bool sched_mm_cid_add_user(struct task_struct *t, struct mm_struct *mm)
+ {
+ 	t->mm_cid.active = 1;
+@@ -10592,7 +10632,7 @@ void sched_mm_cid_fork(struct task_struct *t)
  		if (!percpu)
  			mm_cid_transit_to_task(current, pcp);
  		else
@@ -253,12 +280,6 @@ index 60afadb6eede..bd86e4bd0cd7 100644
  	}
  
  	if (percpu) {
- 		mm_cid_fixup_tasks_to_cpus();
-+		/* Clear the transition bit */
-+		WRITE_ONCE(mm->mm_cid.transit, 0);
- 	} else {
- 		mm_cid_fixup_cpus_to_tasks(mm);
- 		t->mm_cid.cid = mm_get_cid(mm);
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
 index d30cca6870f5..96f613d7d181 100644
 --- a/kernel/sched/sched.h

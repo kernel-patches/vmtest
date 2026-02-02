@@ -1,7 +1,7 @@
-From a8df30f884230bc8be1a58029e15073795e85cf0 Mon Sep 17 00:00:00 2001
+From 0753080bd26e8209d870106ac3bd1d80454c1399 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@kernel.org>
-Date: Thu, 29 Jan 2026 22:20:54 +0100
-Subject: [PATCH 202601294/202601294] sched/mmcid: Optimize transitional CIDs
+Date: Mon, 2 Feb 2026 10:39:55 +0100
+Subject: [PATCH 202602024/202602024] sched/mmcid: Optimize transitional CIDs
  when scheduling out
 
 During the investigation of the various transition mode issues
@@ -13,10 +13,11 @@ At that point the mode is stable and therefore it is not required to drop
 the transitional CID back into the pool. As the fixup is complete the
 potential exhaustion of the CID pool is not longer possible, so the CID can
 be transferred to the scheduling out task or to the CPU depending on the
-current ownership mode. This is now possible because mm_cid::mode contains
-both the ownership state and the transition bit so the racy snapshot is
-valid under all circumstances because a subsequent modification of the
-mode is serialized by the corresponding runqueue lock.
+current ownership mode.
+
+The racy snapshot of mm_cid::mode which contains both the ownership state
+and the transition bit is valid because runqueue lock is held and the fixup
+function of a concurrent mode switch is serialized.
 
 Assigning the ownership right there not only spares the bitmap access for
 dropping the CID it also avoids it when the task is scheduled back in as it
@@ -31,15 +32,16 @@ boundaries frequently this reduces the number of bitmap operations by about
 percentage range.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 ---
- kernel/sched/sched.h | 24 ++++++++++++++++++++++--
- 1 file changed, 22 insertions(+), 2 deletions(-)
+ kernel/sched/sched.h | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index ecf2281e3545..7bcf31889dd3 100644
+index ecf2281e3545..70b595dbf227 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -3879,12 +3879,32 @@ static __always_inline void mm_cid_schedin(struct task_struct *next)
+@@ -3879,12 +3879,31 @@ static __always_inline void mm_cid_schedin(struct task_struct *next)
  
  static __always_inline void mm_cid_schedout(struct task_struct *prev)
  {
@@ -57,8 +59,7 @@ index ecf2281e3545..7bcf31889dd3 100644
 +
 +	/*
 +	 * If transition mode is done, transfer ownership when the CID is
-+	 * within the convergion range. Otherwise the next schedule in will
-+	 * have to allocate or converge
++	 * within the convergence range to optimize the next schedule in.
 +	 */
 +	if (!cid_in_transit(mode) && cid < READ_ONCE(mm->mm_cid.max_cids)) {
 +		if (cid_on_cpu(mode))
