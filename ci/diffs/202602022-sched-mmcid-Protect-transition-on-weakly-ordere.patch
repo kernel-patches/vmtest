@@ -1,7 +1,7 @@
-From e8d5b2118fbf73d72c1ddfdbf15909148b99069d Mon Sep 17 00:00:00 2001
+From 683cdd5667e8fc973ab52933deeb270a036bfa7a Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@kernel.org>
-Date: Thu, 29 Jan 2026 22:20:50 +0100
-Subject: [PATCH 202601292/202601294] sched/mmcid: Protect transition on weakly
+Date: Mon, 2 Feb 2026 10:39:45 +0100
+Subject: [PATCH 202602022/202602024] sched/mmcid: Protect transition on weakly
  ordered systems
 
 Shrikanth reported a hard lockup which he observed once. The stack trace
@@ -74,8 +74,11 @@ but that brings a memory barrier back into the scheduler hotpath, which was
 just designed out by the CID rewrite.
 
 That can be completely avoided by combining the per CPU mode and the
-transit storage into a single mm_cid::mode member. That makes the update of
-both states atomic and a concurrent read observes always consistent state.
+transit storage into a single mm_cid::mode member and ordering the stores
+against the fixup functions to prevent the CPU from reordering them.
+
+That makes the update of both states atomic and a concurrent read observes
+always consistent state.
 
 The price is an additional AND operation in mm_cid_schedin() to evaluate
 the per CPU or the per task path, but that's in the noise even on strongly
@@ -86,14 +89,15 @@ Fixes: fbd0e71dc370 ("sched/mmcid: Provide CID ownership mode fixup functions")
 Reported-by: Shrikanth Hegde <sshegde@linux.ibm.com>
 Signed-off-by: Thomas Gleixner <tglx@kernel.org>
 Closes: https://lore.kernel.org/bdfea828-4585-40e8-8835-247c6a8a76b0@linux.ibm.com
+Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 ---
- include/linux/rseq_types.h |  7 ++---
- kernel/sched/core.c        | 62 +++++++++++++++++++++++---------------
- kernel/sched/sched.h       | 21 +++++++------
- 3 files changed, 53 insertions(+), 37 deletions(-)
+ include/linux/rseq_types.h |  6 ++--
+ kernel/sched/core.c        | 66 +++++++++++++++++++++++++-------------
+ kernel/sched/sched.h       | 21 ++++++------
+ 3 files changed, 58 insertions(+), 35 deletions(-)
 
 diff --git a/include/linux/rseq_types.h b/include/linux/rseq_types.h
-index 332dc14b81c9..46e947cdf985 100644
+index 332dc14b81c9..ef0811379c54 100644
 --- a/include/linux/rseq_types.h
 +++ b/include/linux/rseq_types.h
 @@ -121,8 +121,7 @@ struct mm_cid_pcpu {
@@ -106,13 +110,7 @@ index 332dc14b81c9..46e947cdf985 100644
   * @max_cids:		The exclusive maximum CID value for allocation and convergence
   * @irq_work:		irq_work to handle the affinity mode change case
   * @work:		Regular work to handle the affinity mode change case
-@@ -134,13 +133,13 @@ struct mm_cid_pcpu {
-  *			as that is modified by mmget()/mm_put() by other entities which
-  *			do not actually share the MM.
-  * @pcpu_thrs:		Threshold for switching back from per CPU mode
-+ * @mode_change:	Mode change in progress
-  * @update_deferred:	A deferred switch back to per task mode is pending.
-  */
+@@ -139,8 +138,7 @@ struct mm_cid_pcpu {
  struct mm_mm_cid {
  	/* Hotpath read mostly members */
  	struct mm_cid_pcpu	__percpu *pcpu;
@@ -123,7 +121,7 @@ index 332dc14b81c9..46e947cdf985 100644
  
  	/* Rarely used. Moves @lock and @mutex into the second cacheline */
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index bd86e4bd0cd7..64999332076f 100644
+index f78966867d7b..f429ff4eb84c 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -10293,16 +10293,25 @@ void call_trace_sched_update_nr_running(struct rq *rq, int count)
@@ -175,7 +173,7 @@ index bd86e4bd0cd7..64999332076f 100644
  		/* Enable per CPU mode when the number of users is above max_cids */
  		if (mc->users > mc->max_cids)
  			mc->pcpu_thrs = mm_cid_calc_pcpu_thrs(mc);
-@@ -10426,12 +10436,11 @@ static bool mm_update_max_cids(struct mm_struct *mm)
+@@ -10426,12 +10436,17 @@ static bool mm_update_max_cids(struct mm_struct *mm)
  	}
  
  	/* Mode change required? */
@@ -188,10 +186,16 @@ index bd86e4bd0cd7..64999332076f 100644
 -	WRITE_ONCE(mc->percpu, !!mc->pcpu_thrs);
 +	/* Flip the mode and set the transition flag to bridge the transfer */
 +	WRITE_ONCE(mc->mode, mc->mode ^ (MM_CID_TRANSIT | MM_CID_ONCPU));
++	/*
++	 * Order the store against the subsequent fixups so that
++	 * acquire(rq::lock) cannot be reordered by the CPU before the
++	 * store.
++	 */
++	smp_mb();
  	return true;
  }
  
-@@ -10456,7 +10465,7 @@ static inline void mm_update_cpus_allowed(struct mm_struct *mm, const struct cpu
+@@ -10456,7 +10471,7 @@ static inline void mm_update_cpus_allowed(struct mm_struct *mm, const struct cpu
  
  	WRITE_ONCE(mc->nr_cpus_allowed, weight);
  	__mm_update_max_cids(mc);
@@ -200,45 +204,44 @@ index bd86e4bd0cd7..64999332076f 100644
  		return;
  
  	/* Adjust the threshold to the wider set */
-@@ -10517,8 +10526,8 @@ static void mm_cid_fixup_cpus_to_tasks(struct mm_struct *mm)
+@@ -10474,6 +10489,16 @@ static inline void mm_update_cpus_allowed(struct mm_struct *mm, const struct cpu
+ 	irq_work_queue(&mc->irq_work);
+ }
+ 
++static inline void mm_cid_complete_transit(struct mm_struct *mm, unsigned int mode)
++{
++	/*
++	 * Ensure that the store removing the TRANSIT bit cannot be
++	 * reordered by the CPU before the fixups have been completed.
++	 */
++	smp_mb();
++	WRITE_ONCE(mm->mm_cid.mode, mode);
++}
++
+ static inline void mm_cid_transit_to_task(struct task_struct *t, struct mm_cid_pcpu *pcp)
+ {
+ 	if (cid_on_cpu(t->mm_cid.cid)) {
+@@ -10517,8 +10542,7 @@ static void mm_cid_fixup_cpus_to_tasks(struct mm_struct *mm)
  			}
  		}
  	}
 -	/* Clear the transition bit */
 -	WRITE_ONCE(mm->mm_cid.transit, 0);
-+	/* Clear the transition bit in the mode */
-+	WRITE_ONCE(mm->mm_cid.mode, 0);
++	mm_cid_complete_transit(mm, 0);
  }
  
  static inline void mm_cid_transit_to_cpu(struct task_struct *t, struct mm_cid_pcpu *pcp)
-@@ -10546,9 +10555,8 @@ static bool mm_cid_fixup_task_to_cpu(struct task_struct *t, struct mm_struct *mm
- 	return true;
+@@ -10590,8 +10614,7 @@ static void mm_cid_fixup_tasks_to_cpus(void)
+ 	struct mm_struct *mm = current->mm;
+ 
+ 	mm_cid_do_fixup_tasks_to_cpus(mm);
+-	/* Clear the transition bit */
+-	WRITE_ONCE(mm->mm_cid.transit, 0);
++	mm_cid_complete_transit(mm, MM_CID_ONCPU);
  }
  
--static void mm_cid_fixup_tasks_to_cpus(void)
-+static void mm_cid_do_fixup_tasks_to_cpus(struct mm_struct *mm)
- {
--	struct mm_struct *mm = current->mm;
- 	struct task_struct *p, *t;
- 	unsigned int users;
- 
-@@ -10586,6 +10594,15 @@ static void mm_cid_fixup_tasks_to_cpus(void)
- 	}
- }
- 
-+static void mm_cid_fixup_tasks_to_cpus(void)
-+{
-+	struct mm_struct *mm = current->mm;
-+
-+	mm_cid_do_fixup_tasks_to_cpus(mm);
-+	/* Clear the transition bit in the mode */
-+	WRITE_ONCE(mm->mm_cid.mode, MM_CID_ONCPU);
-+}
-+
  static bool sched_mm_cid_add_user(struct task_struct *t, struct mm_struct *mm)
- {
- 	t->mm_cid.active = 1;
-@@ -10614,13 +10631,13 @@ void sched_mm_cid_fork(struct task_struct *t)
+@@ -10622,13 +10645,13 @@ void sched_mm_cid_fork(struct task_struct *t)
  		}
  
  		if (!sched_mm_cid_add_user(t, mm)) {
@@ -254,16 +257,7 @@ index bd86e4bd0cd7..64999332076f 100644
  		if (!percpu)
  			mm_cid_transit_to_task(current, pcp);
  		else
-@@ -10629,8 +10646,6 @@ void sched_mm_cid_fork(struct task_struct *t)
- 
- 	if (percpu) {
- 		mm_cid_fixup_tasks_to_cpus();
--		/* Clear the transition bit */
--		WRITE_ONCE(mm->mm_cid.transit, 0);
- 	} else {
- 		mm_cid_fixup_cpus_to_tasks(mm);
- 		t->mm_cid.cid = mm_get_cid(mm);
-@@ -10661,7 +10676,7 @@ static bool __sched_mm_cid_exit(struct task_struct *t)
+@@ -10667,7 +10690,7 @@ static bool __sched_mm_cid_exit(struct task_struct *t)
  	 * affinity change increased the number of allowed CPUs and the
  	 * deferred fixup did not run yet.
  	 */
@@ -272,7 +266,7 @@ index bd86e4bd0cd7..64999332076f 100644
  		return false;
  	/*
  	 * A failed fork(2) cleanup never gets here, so @current must have
-@@ -10752,7 +10767,7 @@ static void mm_cid_work_fn(struct work_struct *work)
+@@ -10758,7 +10781,7 @@ static void mm_cid_work_fn(struct work_struct *work)
  		if (!mm_update_max_cids(mm))
  			return;
  		/* Affinity changes can only switch back to task mode */
@@ -281,7 +275,7 @@ index bd86e4bd0cd7..64999332076f 100644
  			return;
  	}
  	mm_cid_fixup_cpus_to_tasks(mm);
-@@ -10773,8 +10788,7 @@ static void mm_cid_irq_work(struct irq_work *work)
+@@ -10779,8 +10802,7 @@ static void mm_cid_irq_work(struct irq_work *work)
  void mm_init_cid(struct mm_struct *mm, struct task_struct *p)
  {
  	mm->mm_cid.max_cids = 0;
