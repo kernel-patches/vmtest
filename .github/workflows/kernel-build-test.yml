@@ -108,6 +108,20 @@ jobs:
       test: ${{ matrix.test }}
       continue_on_error: ${{ toJSON(matrix.continue_on_error) }}
       timeout_minutes: ${{ matrix.timeout_minutes }}
+      llvm_version: ${{ inputs.llvm_version }}
+
+  test-progs-asan:
+    name: 'test_progs with ASAN'
+    if: ${{ inputs.arch != 's390x' }}
+    uses: ./.github/workflows/test-progs-asan.yml
+    needs: [build]
+    with:
+      runs_on: ${{ inputs.runs_on }}
+      arch: ${{ inputs.arch }}
+      gcc_version: ${{ inputs.gcc_version }}
+      llvm_version: ${{ inputs.llvm_version }}
+      toolchain: ${{ inputs.toolchain }}
+      toolchain_full: ${{ inputs.toolchain_full }}
 
   veristat-kernel:
     if: ${{ inputs.run_veristat }}
@@ -176,4 +190,3 @@ jobs:
       toolchain: ${{ inputs.toolchain }}
       toolchain_full: ${{ inputs.toolchain_full }}
       download_sources: ${{ inputs.download_sources }}
-
