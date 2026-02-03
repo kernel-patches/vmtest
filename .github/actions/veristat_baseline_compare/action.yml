@@ -33,6 +33,7 @@ runs:
       run: ./.github/scripts/compare-veristat-results.sh
       env:
         BASELINE_PATH: ${{ github.workspace }}/${{ inputs.baseline_name }}
+        VERISTAT_CONFIGS: ${{ github.workspace }}/ci/vmtest/configs
         VERISTAT_OUTPUT: ${{ inputs.veristat_output }}
 
     # For push: just put baseline log to cache

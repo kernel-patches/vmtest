@@ -2,6 +2,8 @@
 
 veristat=$(realpath selftests/bpf/veristat)
 
+source "${VERISTAT_CONFIGS}/run_veristat.${VERISTAT_TARGET}.cfg"
+
 # Dump verifier logs for a list of programs
 # Usage: dump_failed_logs <progs_file>
 # - progs_file: file with lines of format "file_name,prog_name"
