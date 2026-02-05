@@ -31,6 +31,7 @@ jobs:
     runs-on:
       - ${{ format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
       - image:custom-linux-ghcr.io/kernel-patches/runner:kbuilder-debian-x86_64
+      - instance-size:large
     env:
       ARCH: ${{ inputs.arch }}
       BPF_NEXT_BASE_BRANCH: 'master'

@@ -49,7 +49,7 @@ jobs:
     runs-on:
       - ${{ format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
       - image:custom-linux-ghcr.io/kernel-patches/runner:ai-review
-      - instance-size:xlarge
+      - instance-size:large
     strategy:
       matrix:
         commit: ${{ fromJson(needs.get-commits.outputs.commits) }}
