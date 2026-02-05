@@ -14,7 +14,10 @@ jobs:
   get-commits:
     # This codition is an indicator that we are running in a context of PR owned by kernel-patches org
     if: ${{ github.repository == 'kernel-patches/bpf' && vars.AWS_REGION }}
-    runs-on: [self-hosted, x86_64]
+    runs-on:
+      - ${{ format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
+      - image:custom-linux-ghcr.io/kernel-patches/runner:kbuilder-debian-x86_64
+      - instance-size:small
     continue-on-error: true
     outputs:
       commits: ${{ steps.get-commits.outputs.commits }}
@@ -43,7 +46,10 @@ jobs:
 
   ai-review:
     needs: get-commits
-    runs-on: [self-hosted, x86_64]
+    runs-on:
+      - ${{ format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
+      - image:custom-linux-ghcr.io/kernel-patches/runner:ai-review
+      - instance-size:xlarge
     strategy:
       matrix:
         commit: ${{ fromJson(needs.get-commits.outputs.commits) }}
@@ -98,11 +104,17 @@ jobs:
           cd ..
           rmdir .kernel
 
-      - name: Checkout target commit
+      - name: semcode-index
         shell: bash
         run: |
-          git checkout -b patch-series.local
-          git checkout ${{ matrix.commit }}
+          git remote add bpf-next https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git
+          git fetch bpf-next
+          git checkout ${{ matrix.commit }} -b patch-series.local
+          MERGE_BASE=$(git merge-base bpf-next/master HEAD)
+          rm -rf /ci/.semcode.db/lore
+          ln -s /ci/.semcode.db ${{ github.workspace }}/.semcode.db
+          semcode-index --git "${MERGE_BASE}..HEAD"
+          semcode-index --lore bpf
 
       - name: Get patch subject
         id: get-patch-subject
@@ -121,6 +133,7 @@ jobs:
       - name: Set up review prompts
         shell: bash
         run: |
+          cd review-prompts/kernel/scripts && ./claude-setup.sh && cd -
           mv review-prompts/kernel ${{ github.workspace }}/review
           rm -rf review-prompts
 
@@ -129,7 +142,10 @@ jobs:
           show_full_output: true
           github_token: ${{ steps.app-token.outputs.token }}
           use_bedrock: "true"
-          claude_args: '--max-turns 100 --model us.anthropic.claude-opus-4-5-20251101-v1:0'
+          claude_args: |
+            --max-turns 100
+            --mcp-config ci/claude/mcp.json
+            --model us.anthropic.claude-opus-4-5-20251101-v1:0
           allowed_bots: "kernel-patches-daemon-bpf,kernel-patches-review-bot"
           prompt: |
             Current directory is the root of a Linux Kernel git repository.
