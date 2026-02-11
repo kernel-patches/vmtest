@@ -35,7 +35,7 @@ jobs:
             .github
             ci
 
-      - uses: libbpf/ci/build-scx-scheds@v4
+      - uses: libbpf/ci/build-scx-scheds@scx-remove-c
         with:
           output-dir: ${{ env.SCX_BUILD_OUTPUT }}
 
