@@ -38,10 +38,8 @@ jobs:
     env:
       ARCH: ${{ inputs.arch }}
       ARTIFACTS_ARCHIVE: ${{ github.workspace }}/selftests-bpf-asan-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst
-      KERNEL_ORIGIN: ${{ github.repository == 'kernel-patches/bpf-rc' && 'https://github.com/kernel-patches/bpf-rc.git'
-                      || 'https://github.com/kernel-patches/bpf.git'
-                      }}
-      KERNEL_REVISION: ${{ inputs.download_sources && 'bpf-next' || github.sha }}
+      KERNEL_ORIGIN: 'https://github.com/theihor/bpf.git'
+      KERNEL_REVISION: selftests-asan
       REPO_ROOT: ${{ github.workspace }}/src
     steps:
 
@@ -64,7 +62,7 @@ jobs:
           repo-root: ${{ env.REPO_ROOT }}
 
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@v4
+        uses: libbpf/ci/setup-build-env@selftests-asan
         with:
           arch: ${{ inputs.arch }}
           gcc-version: ${{ inputs.gcc_version }}
@@ -80,7 +78,7 @@ jobs:
         run: zstd -d -T0 vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst --stdout | tar -xf -
 
       - name: Build selftests/bpf/test_progs with ASAN
-        uses: libbpf/ci/build-selftests@v4
+        uses: libbpf/ci/build-selftests@selftests-asan
         env:
           KBUILD_OUTPUT: ${{ env.REPO_ROOT }}/kbuild-output
           SELFTESTS_BPF_ASAN: 'true'
@@ -93,7 +91,7 @@ jobs:
 
       - name: Tar artifacts
         id: tar-artifacts
-        uses: libbpf/ci/tar-artifacts@v4
+        uses: libbpf/ci/tar-artifacts@selftests-asan
         env:
           ARCHIVE_BPF_SELFTESTS: 'true'
           ARCHIVE_KBUILD_OUTPUT: '' # emptystring means false
@@ -147,7 +145,7 @@ jobs:
         run: zstd -d -T0 selftests-bpf-asan-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst --stdout | tar -xf -
 
       - name: Run selftests
-        uses: libbpf/ci/run-vmtest@v4
+        uses: libbpf/ci/run-vmtest@selftests-asan
         env:
           ARCH: ${{ inputs.arch }}
           DEPLOYMENT: ${{ env.DEPLOYMENT }}

@@ -39,6 +39,8 @@ jobs:
       GCC_BPF_RELEASE_REPO: 'theihor/gcc-bpf'
       KBUILD_OUTPUT: ${{ github.workspace }}/src/kbuild-output
       REPO_ROOT: ${{ github.workspace }}/src
+      KERNEL_ORIGIN: 'https://github.com/theihor/bpf.git'
+      KERNEL_REVISION: selftests-asan
 
     steps:
 
@@ -53,7 +55,8 @@ jobs:
         uses: libbpf/ci/get-linux-source@v4
         with:
           dest: ${{ env.REPO_ROOT }}
-          rev: ${{ env.BPF_NEXT_BASE_BRANCH }}
+          repo: ${{ env.KERNEL_ORIGIN }}
+          rev: ${{ env.KERNEL_REVISION }}
 
       - if: ${{ ! inputs.download_sources }}
         name: Checkout ${{ github.repository }} to ./src

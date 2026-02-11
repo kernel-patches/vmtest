@@ -60,10 +60,8 @@ jobs:
         KBUILD_OUTPUT: ${{ github.workspace }}/kbuild-output
         KERNEL: ${{ inputs.kernel }}
         KERNEL_ROOT: ${{ github.workspace }}
-        KERNEL_ORIGIN: ${{ github.repository == 'kernel-patches/bpf-rc' && 'https://github.com/kernel-patches/bpf-rc.git'
-                        || 'https://github.com/kernel-patches/bpf.git'
-                        }}
-        KERNEL_REVISION: ${{ inputs.download_sources && 'bpf-next' || github.sha }}
+        KERNEL_ORIGIN: 'https://github.com/theihor/bpf.git'
+        KERNEL_REVISION: selftests-asan
         REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
         REPO_PATH: ""
         REPO_ROOT: ${{ github.workspace }}
