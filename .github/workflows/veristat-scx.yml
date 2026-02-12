@@ -59,7 +59,6 @@ jobs:
       REPO_PATH: ""
       KBUILD_OUTPUT: kbuild-output/
       ARCH_AND_TOOL: ${{ inputs.arch }}-${{ inputs.toolchain_full }}
-      VERISTAT_DUMP_LOG_ON_FAILURE: 'true'
       VERISTAT_TARGET: scx
       SCX_BUILD_OUTPUT: ${{ github.workspace }}/scx-build-output
 
