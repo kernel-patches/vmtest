@@ -1,0 +1,151 @@
+name: BPF CI Bot
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+  pull-requests: write
+  actions: read
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ai-agent.yml
+      - ci/claude/bpf-ci-agent.md
+
+jobs:
+  agent-run:
+    runs-on:
+      - ${{ format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
+      - image:custom-linux-ghcr.io/kernel-patches/runner:ai-review
+      - instance-size:large
+    env:
+      AWS_REGION: us-west-2
+    steps:
+      - name: Checkout CI code
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            .github
+            ci
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.KP_REVIEW_BOT_APP_ID }}
+          private-key: ${{ secrets.KP_REVIEW_BOT_APP_PRIVATE_KEY }}
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BEDROCK_ROLE }}
+          aws-region: us-west-2
+
+      - name: Set up .claude/settings.json
+        shell: bash
+        run: |
+          mkdir -p ~/.claude
+          cp ci/claude/settings.json ~/.claude/settings.json
+
+      - name: Download Linux source tree
+        uses: libbpf/ci/get-linux-source@v4
+        with:
+          repo: 'https://github.com/kernel-patches/bpf.git'
+          rev: 'bpf-next'
+          dest: linux
+        env:
+          REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
+          FETCH_DEPTH: 100
+
+      - name: semcode-index
+        shell: bash
+        run: |
+          cd linux
+          git remote add torvalds https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+          git fetch torvalds
+          MERGE_BASE=$(git merge-base v6.19 HEAD)
+          rm -rf /ci/.semcode.db/lore
+          ln -s /ci/.semcode.db .semcode.db
+          semcode-index --git "${MERGE_BASE}..HEAD"
+          semcode-index --lore bpf
+          cd -
+
+      - name: Checkout review-prompts
+        uses: actions/checkout@v6
+        with:
+          repository: 'masoncl/review-prompts'
+          path: 'review-prompts'
+          ref: main
+
+      - name: Checkout libbpf/ci
+        uses: actions/checkout@v6
+        with:
+          repository: 'libbpf/ci'
+          path: 'ci/libbpf/ci'
+          ref: main
+
+      - name: Checkout kernel-patches/vmtest
+        uses: actions/checkout@v6
+        with:
+          repository: 'kernel-patches/vmtest'
+          path: 'ci/kernel-patches/vmtest'
+          ref: master
+
+      - name: Checkout kernel-patches/runner
+        uses: actions/checkout@v6
+        with:
+          repository: 'kernel-patches/runner'
+          path: 'ci/kernel-patches/runner'
+          ref: main
+
+      - name: Checkout danobi/vmtest
+        uses: actions/checkout@v6
+        with:
+          repository: 'danobi/vmtest'
+          path: 'dependencies/vmtest'
+          ref: master
+
+      - name: Checkout facebookexperimental/semcode
+        uses: actions/checkout@v6
+        with:
+          repository: 'facebookexperimental/semcode'
+          path: 'dependencies/semcode'
+          ref: main
+
+      - name: Restore NOTES.md
+        uses: actions/cache/restore@v5
+        with:
+          path: NOTES.md
+          key: notes-md-${{ github.repository }}-${{ github.run_id }}
+          restore-keys: |
+            notes-md-${{ github.repository }}-
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          show_full_output: true
+          github_token: ${{ steps.app-token.outputs.token }}
+          use_bedrock: "true"
+          claude_args: |
+            --max-turns 200
+            --mcp-config ci/claude/mcp.json
+            --model us.anthropic.claude-opus-4-6-v1
+          allowed_bots: "kernel-patches-daemon-bpf,kernel-patches-review-bot"
+          additional_permissions: |
+            actions: read
+          prompt: |
+            Read ci/claude/bpf-ci-agent.md and follow the directions
+
+      - name: Upload output artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: output
+          path: output/
+
+      - name: Save NOTES.md to cache
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: NOTES.md
+          key: notes-md-${{ github.repository }}-${{ github.run_id }}
