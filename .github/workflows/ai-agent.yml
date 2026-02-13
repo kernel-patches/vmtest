@@ -13,6 +13,10 @@ on:
       - .github/workflows/ai-agent.yml
       - ci/claude/bpf-ci-agent.md
 
+concurrency:
+  group: bpf-ci-bot
+  cancel-in-progress: false
+
 jobs:
   agent-run:
     runs-on:
@@ -56,7 +60,7 @@ jobs:
           dest: linux
         env:
           REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
-          FETCH_DEPTH: 100
+          FETCH_DEPTH: 0 # full clone
 
       - name: semcode-index
         shell: bash
@@ -121,6 +125,17 @@ jobs:
           restore-keys: |
             notes-md-${{ github.repository }}-
 
+      - name: Install misc tools
+        shell: bash
+        env:
+          GCC_VERSION: 14
+          LLVM_VERSION: 19
+        run: |
+          sudo apt-get update -y
+          ${{ github.workspace }}/.github/scripts/install-github-cli.sh
+          ${{ github.workspace }}/ci/kernel-patches/runner/install-dependencies.sh all
+          sudo apt-get install python3 jq
+
       - uses: anthropics/claude-code-action@v1
         with:
           show_full_output: true
@@ -135,6 +150,12 @@ jobs:
             actions: read
           prompt: |
             Read ci/claude/bpf-ci-agent.md and follow the directions
+
+      - name: Copy NOTES.md to the output
+        shell: bash
+        run: |
+          mkdir -p output
+          cp NOTES.md output/NOTES.md
 
       - name: Upload output artifacts
         if: always()

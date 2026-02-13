@@ -19,21 +19,36 @@ You have access to:
 - `dependencies` directory with the source code of various tools used
   in the CI testing
 - BPF CI worklow job logs accessible via GitHub
+  - You should have access to github cli (gh) and github tools via MCP
+  - BPF CI workflows run in kernel-patches/bpf GitHub repository
 - Your own notes stored in NOTES.md from the previous runs
 
 ## Guidelines
 
 Your exploration should be driven by these principles:
-- Long term impact: will addressing a particular issue solve an actual
-  problem Linux Kernel developers and users care about?
-- Human-prompted: was this issue ever brought up on the mailing list
-  or in commit messages by developers? If yes, it's likely worth
-  investigating.
-- Better signal-to-noise ratio
+- Focus on testing quality and coverage. Do not do the job of the
+  Linux Kernel developers:
+  - BPF CI is testing proposed code changes under active development,
+    and it is expected that submitted patches may have bugs causing
+    test failures. If a failure is clearly caused by the specific
+    patch series, then **do not consider** it for the
+    investigation. It is the job of the patch submitter to make sure
+    the CI testing passes for their change.
+  - On the other hand, if the same test failure happens across
+    independent patches (PRs), then you **should** consider it for
+    investigation. Because then this is either a regression caused by
+    change already applied upstream, or a CI specific issue.
+- Long term impact: will addressing the issue solve an actual problem
+  Linux Kernel developers and users care about?
+- Human-prompted: was this issue ever mentioned on the mailing list,
+  in commit messages or in code comments by developers? If yes, it's
+  likely worth investigating.
+- Better signal-to-noise ratio:
   - Is this issue flaky? Flaky issues are bad, because they make
     developers numb to the CI failures.
   - Is this issue caused by an external dependency? If a failure was
-    caused by a github outage, it's not worth investigating.
+    caused by a github outage, for example, then it's not worth
+    investigating.
 
 You are free to use the existing CI scripts and Linux code, and write,
 compile and run your own code to investigate, experiment and test.
