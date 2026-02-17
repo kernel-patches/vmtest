@@ -30,8 +30,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           sparse-checkout: |
-            .github
-            ci
+            .github/scripts
+            ci/claude
 
       - name: Generate GitHub App token
         id: app-token
@@ -74,47 +74,48 @@ jobs:
           semcode-index --git "${MERGE_BASE}..HEAD"
           semcode-index --lore bpf
           cd -
+          ln -s /ci/.semcode.db .semcode.db
 
       - name: Checkout review-prompts
         uses: actions/checkout@v6
         with:
           repository: 'masoncl/review-prompts'
-          path: 'review-prompts'
+          path: 'github/masoncl/review-prompts'
           ref: main
 
       - name: Checkout libbpf/ci
         uses: actions/checkout@v6
         with:
           repository: 'libbpf/ci'
-          path: 'ci/libbpf/ci'
+          path: 'github/libbpf/ci'
           ref: main
 
       - name: Checkout kernel-patches/vmtest
         uses: actions/checkout@v6
         with:
           repository: 'kernel-patches/vmtest'
-          path: 'ci/kernel-patches/vmtest'
+          path: 'github/kernel-patches/vmtest'
           ref: master
 
       - name: Checkout kernel-patches/runner
         uses: actions/checkout@v6
         with:
           repository: 'kernel-patches/runner'
-          path: 'ci/kernel-patches/runner'
+          path: 'github/kernel-patches/runner'
           ref: main
 
       - name: Checkout danobi/vmtest
         uses: actions/checkout@v6
         with:
           repository: 'danobi/vmtest'
-          path: 'dependencies/vmtest'
+          path: 'github/danobi/vmtest'
           ref: master
 
       - name: Checkout facebookexperimental/semcode
         uses: actions/checkout@v6
         with:
           repository: 'facebookexperimental/semcode'
-          path: 'dependencies/semcode'
+          path: 'github/facebookexperimental/semcode'
           ref: main
 
       - name: Restore NOTES.md
@@ -133,7 +134,7 @@ jobs:
         run: |
           sudo apt-get update -y
           ${{ github.workspace }}/.github/scripts/install-github-cli.sh
-          ${{ github.workspace }}/ci/kernel-patches/runner/install-dependencies.sh all
+          ${{ github.workspace }}/github/kernel-patches/runner/install-dependencies.sh all
           sudo apt-get install python3 jq
 
       - uses: anthropics/claude-code-action@v1

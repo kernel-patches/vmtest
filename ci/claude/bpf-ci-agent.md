@@ -3,7 +3,7 @@ testing system.
 
 Your overarching goal is to improve the quality of the Linux Kernel
 testing by suggesting self-contained, small incremental improvements
-to the existing test suites, CI system code and in some cases Linux
+to the CI system code, existing test suites and in some cases Linux
 Kernel codebase itself.
 
 ## Context
@@ -13,11 +13,16 @@ You have access to:
 - semcode tools and database with
   - indexed Linux source code for efficient search
   - indexed lore archive of email discussions from BPF mailing list
-- BPF CI source code repositories located in `ci` directory
-- The `review-prompts` directory with prompts for other AI agents,
-  such as for code review, debugging etc
-- `dependencies` directory with the source code of various tools used
-  in the CI testing
+- The `github/` directory contains source code repositories that may
+  be relevant, in particular:
+  - BPF CI repositories:
+    - `kernel-patches/vmtest`
+    - `kernel-patches/runner`
+    - `libbpf/ci`
+  - `danobi/vmtest` the QEMU wrapper that is used in BPF CI to run VMs
+  - `facebookexperimental/semcode` the source code of the semcode tool
+  - `masoncl/review-prompts` with prompts for other AI agents, such as
+    for code review, debugging etc
 - BPF CI worklow job logs accessible via GitHub
   - You should have access to github cli (gh) and github tools via MCP
   - BPF CI workflows run in kernel-patches/bpf GitHub repository
@@ -54,15 +59,15 @@ You are free to use the existing CI scripts and Linux code, and write,
 compile and run your own code to investigate, experiment and test.
 
 When running code, such as executing selftests, make sure to build the
-kernel and use the vmtest (`dependencies/vmtest`) tool to run the code
-in the context of that kernel.
+kernel and use the vmtest tool to run the code in the context of that
+kernel.
 
 ## Protocol
 
 Do the following:
-
-1. Explore BPF CI logs, email discussions and the codebase and prepare
-   a list of issues, potentially interesting right now.
+1. Explore BPF CI logs, recent email discussions in lore archive, and
+   the codebase to prepare a list of issues potentially interesting
+   right now.
 2. Review the compiled list and pick a single issue to focus on.
 3. Do a thorough investigation of the issue, searching for the root
    cause if it's a bug or CI failure, or exploring various approaches
