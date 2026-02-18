@@ -26,6 +26,7 @@ jobs:
     env:
       AWS_REGION: us-west-2
     steps:
+
       - name: Checkout CI code
         uses: actions/checkout@v6
         with:
@@ -33,47 +34,12 @@ jobs:
             .github/scripts
             ci/claude
 
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.KP_REVIEW_BOT_APP_ID }}
-          private-key: ${{ secrets.KP_REVIEW_BOT_APP_PRIVATE_KEY }}
-
-      - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_BEDROCK_ROLE }}
-          aws-region: us-west-2
-
-      - name: Set up .claude/settings.json
+      - name: Set up .claude/settings.json and the prompt
         shell: bash
         run: |
           mkdir -p ~/.claude
           cp ci/claude/settings.json ~/.claude/settings.json
-
-      - name: Download Linux source tree
-        uses: libbpf/ci/get-linux-source@v4
-        with:
-          repo: 'https://github.com/kernel-patches/bpf.git'
-          rev: 'bpf-next'
-          dest: linux
-        env:
-          REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
-          FETCH_DEPTH: 0 # full clone
-
-      - name: semcode-index
-        shell: bash
-        run: |
-          cd linux
-          git remote add torvalds https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-          git fetch torvalds
-          MERGE_BASE=$(git merge-base v6.19 HEAD)
-          rm -rf /ci/.semcode.db/lore
-          ln -s /ci/.semcode.db .semcode.db
-          semcode-index --git "${MERGE_BASE}..HEAD"
-          semcode-index --lore bpf
-          cd -
+          cp ci/claude/bpf-ci-agent.md agent.md
 
       - name: Checkout review-prompts
         uses: actions/checkout@v6
@@ -124,12 +90,6 @@ jobs:
           path: 'github/facebookexperimental/semcode'
           ref: main
 
-      - name: Restore NOTES.md
-        uses: actions/cache/restore@v5
-        with:
-          path: NOTES.md
-          key: notes-md-${{ github.repository }}
-
       - name: Install misc tools
         shell: bash
         env:
@@ -139,7 +99,58 @@ jobs:
           sudo apt-get update -y
           ${{ github.workspace }}/.github/scripts/install-github-cli.sh
           ${{ github.workspace }}/github/kernel-patches/runner/install-dependencies.sh all
-          sudo apt-get install python3 jq
+          sudo apt-get install -y python3 jq
+
+      - name: Download Linux source tree
+        uses: libbpf/ci/get-linux-source@v4
+        with:
+          repo: 'https://github.com/kernel-patches/bpf.git'
+          rev: 'bpf-next'
+          dest: linux
+        env:
+          REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
+          FETCH_DEPTH: 0 # full clone
+
+      # This manipulation is necessary to make sure that
+      # ${{ github.workspace }} is the root of the Linux git repo
+      - name: Move linux source in place
+        shell: bash
+        run: |
+          rm -rf .git .github
+          cd linux
+          mv -t .. $(ls -A)
+          cd ..
+          rmdir linux
+
+      - name: semcode-index
+        shell: bash
+        run: |
+          git remote add torvalds https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+          git fetch torvalds
+          MERGE_BASE=$(git merge-base v6.19 HEAD)
+          rm -rf /ci/.semcode.db/lore
+          ln -s /ci/.semcode.db .semcode.db
+          semcode-index --git "${MERGE_BASE}..HEAD"
+          semcode-index --lore bpf
+
+      - name: Restore NOTES.md
+        uses: actions/cache/restore@v5
+        with:
+          path: NOTES.md
+          key: notes-md-${{ github.repository }}
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.KP_REVIEW_BOT_APP_ID }}
+          private-key: ${{ secrets.KP_REVIEW_BOT_APP_PRIVATE_KEY }}
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BEDROCK_ROLE }}
+          aws-region: us-west-2
 
       - uses: anthropics/claude-code-action@v1
         with:
@@ -154,7 +165,7 @@ jobs:
           additional_permissions: |
             actions: read
           prompt: |
-            Read ci/claude/bpf-ci-agent.md and follow the directions
+            Read agent.md and follow the directions
 
       - name: Copy NOTES.md to the output
         shell: bash

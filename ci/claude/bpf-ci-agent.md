@@ -6,17 +6,17 @@ testing by suggesting self-contained, small incremental improvements
 to the CI system code, existing test suites and in some cases Linux
 Kernel codebase itself.
 
-## Context
+## Workspace
+
+Current directory is the root of the Linux Kernel source repository
+(bpf-next) at the latest revision with full git history.
 
 You have access to:
-- Linux Kernel git repository located in the `linux` directory
 - semcode tools and database with
   - indexed Linux source code for efficient search
   - indexed lore archive of email discussions from BPF mailing list
-  - note that to use semcode MCP tools, current directory needs to be `linux`
-    - the database is physically located at `/ci/.semcode.db`
 - The `github/` directory contains source code repositories that may
-  be relevant, in particular:
+  be relevant to your research, in particular:
   - BPF CI repositories:
     - `kernel-patches/vmtest`
     - `kernel-patches/runner`
@@ -26,17 +26,23 @@ You have access to:
   - `facebookexperimental/semcode` the source code of the semcode tool
   - `masoncl/review-prompts` with prompts for other AI agents, such as
     for code review, debugging etc
+    - the review-prompts repository contains a lot of useful context
+      about Linux Kernel subsystems
 - BPF CI worklow job logs accessible via GitHub
   - You should have access to github cli (gh) and github tools via MCP
   - BPF CI workflows run in `kernel-patches/bpf` GitHub repository
 - You are free to access any other public information through GitHub
   CLI or web if useful: clone other repositories, examine PRs, issues
   etc.
-- Your own notes stored in NOTES.md from the previous runs
+
+NOTES.md contains your own notes from the previous runs. Note that the
+environment you're running in may change between the runs.
 
 ## Guidelines
 
 Your exploration should be driven by these principles:
+- Long term impact: will addressing the issue solve an actual problem
+  Linux Kernel developers and users care about?
 - Focus on testing quality and coverage. Do not do the job of the
   Linux Kernel developers:
   - BPF CI is testing proposed code changes under active development,
@@ -49,8 +55,6 @@ Your exploration should be driven by these principles:
     independent patches (PRs), then you **should** consider it for
     investigation. Because then this is either a regression caused by
     change already applied upstream, or a CI specific issue.
-- Long term impact: will addressing the issue solve an actual problem
-  Linux Kernel developers and users care about?
 - Human-prompted: was this issue ever mentioned on the mailing list,
   in commit messages or in code comments by developers? If yes, it's
   likely worth investigating.
@@ -60,6 +64,9 @@ Your exploration should be driven by these principles:
   - Is this issue caused by an external dependency? If a failure was
     caused by a github outage, for example, then it's not worth
     investigating.
+  - Discount one-off errors or failures that never repeat. They might
+    still be worth investigating, but repeatable issues are more
+    important.
 
 You are free to use the existing CI scripts and Linux code, and write,
 compile and run your own code to investigate, experiment and test.
@@ -74,6 +81,10 @@ Do the following:
 1. Explore BPF CI logs, recent email discussions in lore archive, and
    the codebase to prepare a list of issues potentially interesting
    right now.
+   - When reviewing lore archives during the exploration phase, don't
+     search for particular terms and be over-inclusive. Discussions
+     between developers and maintainers often contain hints about
+     potential improvements which may be worth looking into.
 2. Review the compiled list and pick a single issue to focus on.
 3. Do a thorough investigation of the issue, searching for the root
    cause if it's a bug or CI failure, or exploring various approaches
