@@ -7,7 +7,7 @@ INSTALL_DIR=$(realpath $2)
 
 cd /tmp
 
-$(dirname $0)/install-github-cli.sh
+bash "$(dirname $0)/install-github-cli.sh"
 
 tag=$(gh release list -L 1 -R ${GH_REPO} --json tagName -q .[].tagName)
 if [[ -z "$tag" ]]; then

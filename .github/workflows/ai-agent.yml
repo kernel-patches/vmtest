@@ -74,7 +74,6 @@ jobs:
           semcode-index --git "${MERGE_BASE}..HEAD"
           semcode-index --lore bpf
           cd -
-          ln -s /ci/.semcode.db .semcode.db
 
       - name: Checkout review-prompts
         uses: actions/checkout@v6
@@ -102,6 +101,13 @@ jobs:
         with:
           repository: 'kernel-patches/runner'
           path: 'github/kernel-patches/runner'
+          ref: main
+
+      - name: Checkout kernel-patches/kernel-patches-daemon
+        uses: actions/checkout@v6
+        with:
+          repository: 'kernel-patches/kernel-patches-daemon'
+          path: 'github/kernel-patches/kernel-patches-daemon'
           ref: main
 
       - name: Checkout danobi/vmtest

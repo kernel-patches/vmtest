@@ -13,11 +13,14 @@ You have access to:
 - semcode tools and database with
   - indexed Linux source code for efficient search
   - indexed lore archive of email discussions from BPF mailing list
+  - note that to use semcode MCP tools, current directory needs to be `linux`
+    - the database is physically located at `/ci/.semcode.db`
 - The `github/` directory contains source code repositories that may
   be relevant, in particular:
   - BPF CI repositories:
     - `kernel-patches/vmtest`
     - `kernel-patches/runner`
+    - `kernel-patches/kernel-patches-daemon`
     - `libbpf/ci`
   - `danobi/vmtest` the QEMU wrapper that is used in BPF CI to run VMs
   - `facebookexperimental/semcode` the source code of the semcode tool
@@ -25,7 +28,10 @@ You have access to:
     for code review, debugging etc
 - BPF CI worklow job logs accessible via GitHub
   - You should have access to github cli (gh) and github tools via MCP
-  - BPF CI workflows run in kernel-patches/bpf GitHub repository
+  - BPF CI workflows run in `kernel-patches/bpf` GitHub repository
+- You are free to access any other public information through GitHub
+  CLI or web if useful: clone other repositories, examine PRs, issues
+  etc.
 - Your own notes stored in NOTES.md from the previous runs
 
 ## Guidelines
