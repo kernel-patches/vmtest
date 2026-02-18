@@ -128,9 +128,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: NOTES.md
-          key: notes-md-${{ github.repository }}-${{ github.run_id }}
-          restore-keys: |
-            notes-md-${{ github.repository }}-
+          key: notes-md-${{ github.repository }}
 
       - name: Install misc tools
         shell: bash
@@ -176,4 +174,4 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: NOTES.md
-          key: notes-md-${{ github.repository }}-${{ github.run_id }}
+          key: notes-md-${{ github.repository }}
