@@ -86,7 +86,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .github/scripts/download-gcc-bpf.sh ${{ env.GCC_BPF_RELEASE_REPO }} ${{ env.GCC_BPF_INSTALL_DIR }}
+        run: .github/scripts/download-gh-release.sh ${{ env.GCC_BPF_RELEASE_REPO }} ${{ env.GCC_BPF_INSTALL_DIR }}
 
       - name: Build selftests/bpf/test_progs-bpf_gcc
         uses: libbpf/ci/build-selftests@v4
