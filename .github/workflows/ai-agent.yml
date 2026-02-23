@@ -193,3 +193,46 @@ jobs:
         with:
           path: NOTES.md
           key: notes-md-${{ github.repository }}
+
+  post-output:
+    needs: agent-run
+    if: always()
+    runs-on: ubuntu-slim
+    steps:
+      - name: Download output artifact
+        id: download
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: output
+          path: output/
+
+      - name: Generate GitHub App token
+        if: steps.download.outcome == 'success' && hashFiles('output/summary.md') != ''
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.KP_REVIEW_BOT_APP_ID }}
+          private-key: ${{ secrets.KP_REVIEW_BOT_APP_PRIVATE_KEY }}
+
+      - name: Post an issue
+        if: steps.download.outcome == 'success' && hashFiles('output/summary.md') != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          # Create issue from summary.md
+          TITLE="[bpf-ci-bot] $(head -n 1 output/summary.md | sed 's/^#\+ *//')"
+          tail -n +2 output/summary.md > body.md
+          ISSUE_URL=$(gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "$TITLE" \
+            --body-file body.md)
+
+          # Post each .patch as a separate comment
+          for patch in output/*.patch; do
+            [ -f "$patch" ] || continue
+            FILENAME=$(basename "$patch")
+            printf '## %s\n\n```\n%s\n```' "$FILENAME" "$(cat "$patch")" > comment.md
+            gh issue comment "$ISSUE_URL" --body-file comment.md
+          done

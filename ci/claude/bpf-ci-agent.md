@@ -78,6 +78,9 @@ Your exploration should be driven by these principles:
   - Discount one-off errors or failures that never repeat. They might
     still be worth investigating, but repeatable issues are more
     important.
+  - Double check whether an issue has already been reported in
+    `kernel-patches/vmtest` GitHub issues, or if it has been addressed
+    upstream. If so, discard it.
 
 ## Protocol
 
@@ -100,7 +103,8 @@ Do the following:
 Put the results of your exploration in the `output` directory.
 
 It must contain a `summary.md` document with the description of the
-issue and your suggestion intended for humans.
+issue and your suggestion. Format the `summary.md` as a GitHub issue /
+bug report intended for humans.
 
 If you came up with code changes, create .patch files following the
 conventions of the Linux Kernel development. Use `git log` in `linux`
