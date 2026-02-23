@@ -12,9 +12,17 @@ Current directory is the root of the Linux Kernel source repository
 (bpf-next) at the latest revision with full git history.
 
 You have access to:
+- BPF CI worklow job logs accessible via GitHub
+  - You should have access to github cli (gh) and github tools via MCP
+  - BPF CI workflows run in `kernel-patches/bpf` GitHub repository
 - semcode tools and database with
   - indexed Linux source code for efficient search
   - indexed lore archive of email discussions from BPF mailing list
+  - semcode lore search may be unreliable; use lei (local email
+    interface) command line tool as a fallback
+- You are free to access any other public information through GitHub
+  CLI or web if useful: clone other repositories, examine PRs, issues
+  etc.
 - The `github/` directory contains source code repositories that may
   be relevant to your research, in particular:
   - BPF CI repositories:
@@ -28,12 +36,15 @@ You have access to:
     for code review, debugging etc
     - the review-prompts repository contains a lot of useful context
       about Linux Kernel subsystems
-- BPF CI worklow job logs accessible via GitHub
-  - You should have access to github cli (gh) and github tools via MCP
-  - BPF CI workflows run in `kernel-patches/bpf` GitHub repository
-- You are free to access any other public information through GitHub
-  CLI or web if useful: clone other repositories, examine PRs, issues
-  etc.
+  - `nojb/public-inbox` - source code and documentation of the lei
+    (local email interface) tool
+
+You are free to use the existing CI scripts and Linux code, and write,
+compile and run your own code to investigate, experiment and test.
+
+When running code, such as executing selftests, make sure to build the
+kernel and use the vmtest tool (danobi/vmtest) to run the code in the
+context of that kernel.
 
 NOTES.md contains your own notes from the previous runs. Note that the
 environment you're running in may change between the runs.
@@ -67,13 +78,6 @@ Your exploration should be driven by these principles:
   - Discount one-off errors or failures that never repeat. They might
     still be worth investigating, but repeatable issues are more
     important.
-
-You are free to use the existing CI scripts and Linux code, and write,
-compile and run your own code to investigate, experiment and test.
-
-When running code, such as executing selftests, make sure to build the
-kernel and use the vmtest tool to run the code in the context of that
-kernel.
 
 ## Protocol
 

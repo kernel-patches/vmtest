@@ -90,6 +90,13 @@ jobs:
           path: 'github/facebookexperimental/semcode'
           ref: main
 
+      - name: Checkout nojb/public-inbox
+        uses: actions/checkout@v6
+        with:
+          repository: 'nojb/public-inbox'
+          path: 'github/nojb/public-inbox'
+          ref: master
+
       - name: Install misc tools
         shell: bash
         env:
@@ -99,7 +106,7 @@ jobs:
           sudo apt-get update -y
           ${{ github.workspace }}/.github/scripts/install-github-cli.sh
           ${{ github.workspace }}/github/kernel-patches/runner/install-dependencies.sh all
-          sudo apt-get install -y python3 jq
+          sudo apt-get install -y python3 jq lei
 
       - name: Download Linux source tree
         uses: libbpf/ci/get-linux-source@v4
