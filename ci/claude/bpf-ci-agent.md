@@ -36,28 +36,70 @@ Not all failures can be reproduced locally (flaky tests,
 architecture-specific issues), but the attempt itself yields useful
 information.
 
-Kernel configs live in
-`github/kernel-patches/vmtest/ci/vmtest/configs/`. For exact CI build
-steps, examine the workflow files in `github/kernel-patches/vmtest/`
-and the reusable actions in `github/libbpf/ci/`.
+`github/libbpf/ci/` contains the reusable CI actions and scripts that
+drive BPF CI. Read these scripts when you need to understand exactly
+how CI builds or runs tests. Key files:
 
+- `build-linux/build.sh` — kernel build (config assembly + make)
+- `build-selftests/build_selftests.sh` — selftest build
+- `run-vmtest/run.sh` — test orchestration (sets up VM, runs tests)
+- `run-vmtest/run-bpf-selftests.sh` — BPF test runner (inside VM)
+- `run-vmtest/prepare-bpf-selftests.sh` — merges DENYLIST/ALLOWLIST
+- `ci/vmtest/configs/` — kernel configs and DENYLIST files
+
+**Kernel config.** CI assembles .config from multiple fragments:
 ```
-# Configure (use the CI's own config files)
-cp github/kernel-patches/vmtest/ci/vmtest/configs/config .config
-cat github/kernel-patches/vmtest/ci/vmtest/configs/config.x86_64 >> .config
+# Selftest requirements (in the kernel tree)
+tools/testing/selftests/bpf/config
+tools/testing/selftests/bpf/config.vm
+tools/testing/selftests/bpf/config.x86_64    # or .aarch64, .s390x
+
+# CI-specific options (KASAN, livepatch, etc.)
+github/kernel-patches/vmtest/ci/vmtest/configs/config
+github/kernel-patches/vmtest/ci/vmtest/configs/config.x86_64
+```
+To replicate locally:
+```
+cat tools/testing/selftests/bpf/config \
+    tools/testing/selftests/bpf/config.vm \
+    tools/testing/selftests/bpf/config.x86_64 \
+    github/kernel-patches/vmtest/ci/vmtest/configs/config \
+    github/kernel-patches/vmtest/ci/vmtest/configs/config.x86_64 \
+    > .config 2>/dev/null
 make olddefconfig
+```
 
-# Build kernel and selftests
+**Build kernel and selftests:**
+```
 make -j$(nproc)
+make headers
 make -C tools/testing/selftests/bpf -j$(nproc)
+```
 
-# Run a specific test via vmtest
+**Run tests via vmtest.** The `vmtest` tool boots a QEMU VM with the
+given kernel image, mounts the working directory, and runs a command:
+```
 vmtest -k arch/x86/boot/bzImage -- \
   ./tools/testing/selftests/bpf/test_progs -t <test_name>
 ```
-
 If `vmtest` is not available as a binary, build it from
 `github/danobi/vmtest` (`cargo build --release`).
+
+test_progs flags used in CI:
+- `-t <name>` — run a specific test
+- `-j` — run tests in parallel
+- `-a@<file>` — allowlist from file
+- `-d@<file>` — denylist from file
+- `-w<seconds>` — per-test watchdog timeout (CI uses 600)
+
+**DENYLIST/ALLOWLIST.** CI merges multiple list files per arch and
+deployment. The lists live in two places:
+- `tools/testing/selftests/bpf/DENYLIST[.arch]` (in-tree)
+- `github/kernel-patches/vmtest/ci/vmtest/configs/DENYLIST[.arch]`
+
+Format: one test name per line, `test_name/subtest_name` for subtests,
+`#` for comments. See `run-vmtest/prepare-bpf-selftests.sh` for the
+merge logic.
 
 ## Guidelines
 
