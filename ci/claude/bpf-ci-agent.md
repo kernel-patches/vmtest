@@ -31,8 +31,10 @@ You have access to:
 
 ### Building and running tests
 
-Reading code is not enough — compile, run, and verify when
-investigating test failures or developing fixes.
+Reading code is not enough — compile, run, and verify when possible.
+Not all failures can be reproduced locally (flaky tests,
+architecture-specific issues), but the attempt itself yields useful
+information.
 
 Kernel configs live in
 `github/kernel-patches/vmtest/ci/vmtest/configs/`. For exact CI build
@@ -174,8 +176,10 @@ PHASE 2 COMPLETE: Issue selected
 **3.1 Reproduce and characterize.** Gather failure logs, identify the
 exact failing test/component, and determine the failure mode. For test
 failures, attempt local reproduction using the build-and-run commands
-above. Run flaky tests multiple times. Record whether reproduction
-succeeded — either result is valuable.
+above. Many CI failures are flaky or architecture-specific (e.g.,
+s390x), so reproduction may not succeed — that is expected. Record the
+result either way; inability to reproduce locally is useful information
+(suggests a race, arch-specific behavior, or environment dependency).
 
 **3.2 Root cause analysis.** Read the test code and the kernel code it
 exercises. Use semcode for functions/callers/call chains. Check git
@@ -188,15 +192,28 @@ Checklist:
 - [ ] Lore checked
 - [ ] Root cause identified or best theory documented
 
-**3.3 Develop fix.** Write and test the fix if possible. **Code fixes
-MUST be verified** — build, run the failing test, confirm it passes
-before generating output. For CI config changes, verify by examining
-the configuration logic.
+**3.3 Develop fix (if warranted).** Write and test the fix if
+possible. For code fixes, attempt to verify by building and running
+the failing test. For flaky tests, the test may still not fail
+deterministically after the fix — that is OK; verify the fix is
+logically correct by code inspection. For CI config changes, verify by
+examining the configuration logic.
+
+**3.4 Decide whether to report.** Not every investigation leads to a
+report. After completing the investigation, decide whether the issue
+is worth reporting. **Do NOT generate output** if:
+- The issue turned out to be a one-off that is no longer reproducing
+- The issue was already fixed upstream (add it to the skip list in
+  NOTES.md instead)
+- The root cause is unclear AND you have no actionable recommendation
+
+If you decide not to report, skip Phase 4 output (steps 4.1 and 4.2)
+but still update NOTES.md (step 4.3) with what you found.
 
 ```
 PHASE 3 COMPLETE: Investigation finished
   Root cause: <identified | theory | unknown>
-  Fix: <patch ready | recommendation | needs upstream work>
+  Fix: <patch ready | recommendation | needs upstream work | not reporting>
 ```
 
 ---
@@ -268,7 +285,7 @@ PHASE 4 COMPLETE: Output generated
 5. Batch parallel tool calls (up to 4 `gh` commands per message).
    Do not examine PRs/issues sequentially when batching is possible.
 6. Use broad lore search patterns first, then narrow down.
-7. Reproduce test failures locally via vmtest. Do not rely solely on
-   reading code and CI logs.
-8. Verify code fixes compile and pass the relevant test before writing
-   the patch file.
+7. Attempt to reproduce test failures locally via vmtest when feasible.
+   Do not rely solely on reading code and CI logs.
+8. Attempt to verify code fixes by building and running the relevant
+   test. If the test is flaky, verify correctness by code inspection.
