@@ -138,7 +138,7 @@ jobs:
         run: |
           git remote add torvalds https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
           git fetch torvalds
-          MERGE_BASE=$(git merge-base v6.19 HEAD)
+          MERGE_BASE=$(git merge-base torvalds/master HEAD)
           rm -rf /ci/.semcode.db/lore
           ln -s /ci/.semcode.db .semcode.db
           semcode-index --git "${MERGE_BASE}..HEAD"
