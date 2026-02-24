@@ -59,40 +59,21 @@ You have access to:
     `kernel-patches/kernel-patches-daemon`, `libbpf/ci` — BPF CI code
   - `danobi/vmtest` — QEMU wrapper used in BPF CI to run VMs
   - `facebookexperimental/semcode` — semcode source code
-  - `masoncl/review-prompts` — prompts for other AI agents, with
-    useful context about Linux Kernel subsystems
+  - `masoncl/review-prompts` — prompts with useful context about
+    Linux Kernel subsystems
   - `nojb/public-inbox` — lei (local email interface) tool
 
 ### Building and running tests
 
-Reading code is not enough — compile, run, and verify when possible.
-Not all failures can be reproduced locally (flaky tests,
-architecture-specific issues), but the attempt itself yields useful
-information.
-
-`github/libbpf/ci/` contains the reusable CI actions and scripts that
-drive BPF CI. Read these scripts when you need to understand exactly
-how CI builds or runs tests. Key files:
-
+`github/libbpf/ci/` contains the CI scripts. Key files:
 - `build-linux/build.sh` — kernel build (config assembly + make)
 - `build-selftests/build_selftests.sh` — selftest build
-- `run-vmtest/run.sh` — test orchestration (sets up VM, runs tests)
+- `run-vmtest/run.sh` — test orchestration (VM setup + test dispatch)
 - `run-vmtest/run-bpf-selftests.sh` — BPF test runner (inside VM)
 - `run-vmtest/prepare-bpf-selftests.sh` — merges DENYLIST/ALLOWLIST
 - `ci/vmtest/configs/` — kernel configs and DENYLIST files
 
-**Kernel config.** CI assembles .config from multiple fragments:
-```
-# Selftest requirements (in the kernel tree)
-tools/testing/selftests/bpf/config
-tools/testing/selftests/bpf/config.vm
-tools/testing/selftests/bpf/config.x86_64    # or .aarch64, .s390x
-
-# CI-specific options (KASAN, livepatch, etc.)
-github/kernel-patches/vmtest/ci/vmtest/configs/config
-github/kernel-patches/vmtest/ci/vmtest/configs/config.x86_64
-```
-To replicate locally:
+**Kernel config.** CI assembles .config by concatenating fragments:
 ```
 cat tools/testing/selftests/bpf/config \
     tools/testing/selftests/bpf/config.vm \
@@ -102,6 +83,8 @@ cat tools/testing/selftests/bpf/config \
     > .config 2>/dev/null
 make olddefconfig
 ```
+Replace `x86_64` with `aarch64` or `s390x` for other architectures.
+The CI config adds KASAN, livepatch, and sample module options.
 
 **Build kernel and selftests:**
 ```
@@ -110,41 +93,30 @@ make headers
 make -C tools/testing/selftests/bpf -j$(nproc)
 ```
 
-**Run tests via vmtest.** The `vmtest` tool boots a QEMU VM with the
-given kernel image, mounts the working directory, and runs a command:
+**Run tests via vmtest** (boots a QEMU VM with the built kernel):
 ```
 vmtest -k arch/x86/boot/bzImage -- \
   ./tools/testing/selftests/bpf/test_progs -t <test_name>
 ```
-If `vmtest` is not available as a binary, build it from
-`github/danobi/vmtest` (`cargo build --release`).
+If `vmtest` is not installed, build from `github/danobi/vmtest`
+(`cargo build --release`). test_progs flags: `-t <name>` (specific
+test), `-j` (parallel), `-a@<file>` / `-d@<file>` (allow/denylist
+from file), `-w<seconds>` (watchdog timeout, CI uses 600).
 
-test_progs flags used in CI:
-- `-t <name>` — run a specific test
-- `-j` — run tests in parallel
-- `-a@<file>` — allowlist from file
-- `-d@<file>` — denylist from file
-- `-w<seconds>` — per-test watchdog timeout (CI uses 600)
-
-**DENYLIST/ALLOWLIST.** CI merges multiple list files per arch and
-deployment. The lists live in two places:
+**DENYLIST/ALLOWLIST.** One test per line, `test/subtest` for subtests,
+`#` for comments. Lists live in two places and are merged by CI:
 - `tools/testing/selftests/bpf/DENYLIST[.arch]` (in-tree)
 - `github/kernel-patches/vmtest/ci/vmtest/configs/DENYLIST[.arch]`
-
-Format: one test name per line, `test_name/subtest_name` for subtests,
-`#` for comments. See `run-vmtest/prepare-bpf-selftests.sh` for the
-merge logic.
 
 ---
 
 ## Protocol
 
-Follow phases **in order**. Do not skip phases. Print the completion
-banner at the end of each phase.
+Print the completion banner at the end of each phase.
 
 ### Phase 0: Load Context and Build Skip List
 
-**0.1** Read `NOTES.md` (if it exists) for known issues and their status.
+**0.1** Read `NOTES.md` (if it exists) for known issues and status.
 
 **0.2** Check existing vmtest issues (dispatch in parallel):
 ```
@@ -153,8 +125,7 @@ gh issue list --repo kernel-patches/vmtest --state closed --limit 30 \
   --search "sort:updated-desc"
 ```
 
-**0.3** Build a skip list of issues NOT to re-investigate (already
-filed, fix merged, or in-flight). Format as a table:
+**0.3** Build a skip list (already filed, fix merged, in-flight):
 
 | Issue | Source | Reason to skip |
 |-------|--------|----------------|
@@ -170,11 +141,8 @@ PHASE 0 COMPLETE: Context loaded
 
 ### Phase 1: Gather Candidates
 
-Use parallel tool calls wherever possible.
-
 **1.1 CI logs.** List recent failed runs, then fetch logs for 5–8
-failed runs covering independent PRs (dispatch `gh run view` in
-parallel, up to 4 at a time):
+failed runs covering independent PRs:
 ```
 gh run list --repo kernel-patches/bpf --workflow vmtest \
   --status failure --limit 20 --json databaseId,displayTitle,conclusion,createdAt
@@ -184,8 +152,7 @@ Look for test names failing across multiple independent PRs, infra
 failures vs test failures, and patterns in failure messages.
 
 **1.2 Lore archive.** Search for recent BPF mailing list discussions
-about CI issues, flaky tests, or improvements. Be over-inclusive —
-developer discussions often contain hints about potential improvements.
+about CI issues, flaky tests, or improvements. Be over-inclusive.
 Max 3 search attempts per query (see Error Handling).
 
 **1.3 CI configuration.** Check DENYLIST files, recently modified
@@ -227,7 +194,6 @@ Select one issue. State which, why, and the investigation approach.
 PHASE 2 COMPLETE: Issue selected
   Selected: #<N> <name>
   Reason: <1-2 sentences>
-  Investigation approach: <brief plan>
 ```
 
 ---
@@ -235,16 +201,12 @@ PHASE 2 COMPLETE: Issue selected
 ### Phase 3: Investigate
 
 **3.1 Reproduce and characterize.** Gather failure logs, identify the
-exact failing test/component, and determine the failure mode. For test
-failures, attempt local reproduction using the build-and-run commands
-above. Many CI failures are flaky or architecture-specific (e.g.,
-s390x), so reproduction may not succeed — that is expected. Record the
-result either way; inability to reproduce locally is useful information
-(suggests a race, arch-specific behavior, or environment dependency).
+exact failing test/component and failure mode. For test failures,
+attempt local reproduction. Flaky or arch-specific failures may not
+reproduce — record the result either way.
 
-**3.2 Root cause analysis.** Read the test code and the kernel code it
-exercises. Use semcode for functions/callers/call chains. Check git
-history for recent changes. Search lore for related discussions.
+**3.2 Root cause analysis.** Read test and kernel code. Use semcode
+for functions/callers/call chains. Check git history. Search lore.
 
 Checklist:
 - [ ] Failure logs from multiple CI runs
@@ -254,22 +216,16 @@ Checklist:
 - [ ] Root cause identified or best theory documented
 
 **3.3 Develop fix (if warranted).** Write and test the fix if
-possible. For code fixes, attempt to verify by building and running
-the failing test. For flaky tests, the test may still not fail
-deterministically after the fix — that is OK; verify the fix is
-logically correct by code inspection. For CI config changes, verify by
-examining the configuration logic.
+possible. For flaky tests, verify the fix is logically correct by
+code inspection. For CI config changes, verify by examining the
+configuration logic.
 
-**3.4 Decide whether to report.** Not every investigation leads to a
-report. After completing the investigation, decide whether the issue
-is worth reporting. **Do NOT generate output** if:
-- The issue turned out to be a one-off that is no longer reproducing
-- The issue was already fixed upstream (add it to the skip list in
-  NOTES.md instead)
-- The root cause is unclear AND you have no actionable recommendation
+**3.4 Decide whether to report.** **Do NOT generate output** if:
+- The issue is a one-off that is no longer reproducing
+- The issue was already fixed upstream (add to NOTES.md skip list)
+- Root cause is unclear AND no actionable recommendation
 
-If you decide not to report, skip Phase 4 output (steps 4.1 and 4.2)
-but still update NOTES.md (step 4.3) with what you found.
+If not reporting, skip steps 4.1–4.2 but still update NOTES.md.
 
 ```
 PHASE 3 COMPLETE: Investigation finished
@@ -281,7 +237,7 @@ PHASE 3 COMPLETE: Investigation finished
 
 ### Phase 4: Generate Output
 
-**4.1** Create `output/summary.md` as a GitHub issue with these sections:
+**4.1** Create `output/summary.md` as a GitHub issue:
 
 ```markdown
 ## Summary
