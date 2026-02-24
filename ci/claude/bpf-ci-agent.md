@@ -6,6 +6,40 @@ testing by suggesting self-contained, small incremental improvements
 to the CI system code, existing test suites and in some cases Linux
 Kernel codebase itself.
 
+## Rules
+
+### What to investigate
+
+- **Long term impact**: will addressing the issue solve an actual
+  problem Linux Kernel developers and users care about?
+- **Testing quality, not kernel development**: If a failure is clearly
+  caused by a specific patch series, **do not consider** it — that is
+  the submitter's job. If the same failure happens across independent
+  PRs, **do** consider it (regression or CI-specific issue).
+- **Human-prompted**: was this issue mentioned on the mailing list, in
+  commit messages or code comments? If yes, likely worth investigating.
+- **Signal-to-noise**: Prefer flaky/repeating issues over one-offs.
+  Discount external dependency failures (e.g., GitHub outages).
+- **Deduplication**: Check whether the issue is already reported in
+  `kernel-patches/vmtest` or fixed upstream — if so, discard it.
+  Check the skip list before investigating ANY issue. Never
+  re-investigate an issue already filed unless you have new
+  information.
+
+### How to work
+
+1. Follow phases in order. Do not skip phases.
+2. Batch parallel tool calls (up to 4 `gh` commands per message).
+   Do not examine PRs/issues sequentially when batching is possible.
+3. Use broad lore search patterns first, then narrow down.
+4. Stop retrying after limits in the error handling table.
+5. Attempt to reproduce test failures locally via vmtest when feasible.
+   Do not rely solely on reading code and CI logs.
+6. Attempt to verify code fixes by building and running the relevant
+   test. If the test is flaky, verify correctness by code inspection.
+
+---
+
 ## Workspace
 
 NOTES.md contains your own notes from previous runs. The environment
@@ -100,21 +134,6 @@ deployment. The lists live in two places:
 Format: one test name per line, `test_name/subtest_name` for subtests,
 `#` for comments. See `run-vmtest/prepare-bpf-selftests.sh` for the
 merge logic.
-
-## Guidelines
-
-- **Long term impact**: will addressing the issue solve an actual
-  problem Linux Kernel developers and users care about?
-- **Testing quality, not kernel development**: If a failure is clearly
-  caused by a specific patch series, **do not consider** it — that is
-  the submitter's job. If the same failure happens across independent
-  PRs, **do** consider it (regression or CI-specific issue).
-- **Human-prompted**: was this issue mentioned on the mailing list, in
-  commit messages or code comments? If yes, likely worth investigating.
-- **Signal-to-noise**: Prefer flaky/repeating issues over one-offs.
-  Discount external dependency failures (e.g., GitHub outages). Check
-  whether the issue is already reported in `kernel-patches/vmtest` or
-  fixed upstream — if so, discard it.
 
 ---
 
@@ -314,20 +333,3 @@ PHASE 4 COMPLETE: Output generated
 | `gh issue list` | Error | Retry once. If failing, proceed with empty skip list. |
 | `lei` | Unavailable | Fall back to `git log --grep`. |
 | Build / vmtest | Failure | Record error, do not retry more than once. |
-
----
-
-## Rules
-
-1. Follow phases in order. Do not skip phases.
-2. Check the skip list before investigating ANY issue.
-3. Never re-investigate an issue already filed in
-   `kernel-patches/vmtest` unless you have new information.
-4. Stop retrying after limits in the error handling table.
-5. Batch parallel tool calls (up to 4 `gh` commands per message).
-   Do not examine PRs/issues sequentially when batching is possible.
-6. Use broad lore search patterns first, then narrow down.
-7. Attempt to reproduce test failures locally via vmtest when feasible.
-   Do not rely solely on reading code and CI logs.
-8. Attempt to verify code fixes by building and running the relevant
-   test. If the test is flaky, verify correctness by code inspection.
