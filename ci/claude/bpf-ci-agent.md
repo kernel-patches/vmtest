@@ -250,6 +250,8 @@ PHASE 3 COMPLETE: Investigation finished
 **4.1** Create `output/summary.md` as a GitHub issue:
 
 ```markdown
+# <short descriptive title for the issue>
+
 ## Summary
 <1-3 sentences>
 
