@@ -37,6 +37,11 @@ Kernel codebase itself.
    Do not rely solely on reading code and CI logs.
 6. Attempt to verify code fixes by building and running the relevant
    test. If the test is flaky, verify correctness by code inspection.
+7. **Never use `cd` in bash commands.** The working directory persists
+   between commands. Use `git -C <path>` for git operations in
+   companion repos, or absolute paths. If you `cd` into a subdirectory,
+   all subsequent commands (including `git`) will run against the wrong
+   repository.
 
 ---
 
@@ -202,14 +207,18 @@ PHASE 2 COMPLETE: Issue selected
 
 **3.1 Reproduce and characterize.** Gather failure logs, identify the
 exact failing test/component and failure mode. For test failures,
-attempt local reproduction. Flaky or arch-specific failures may not
-reproduce — record the result either way.
+attempt local reproduction using the build and vmtest commands from
+the Workspace section. Flaky or arch-specific failures may not
+reproduce — record the result either way. If you skip reproduction,
+state why (e.g., "infra issue, not a test failure" or "requires
+s390x hardware").
 
 **3.2 Root cause analysis.** Read test and kernel code. Use semcode
 for functions/callers/call chains. Check git history. Search lore.
 
 Checklist:
 - [ ] Failure logs from multiple CI runs
+- [ ] Reproduction attempted (or reason for skipping stated)
 - [ ] Test and kernel code read
 - [ ] Git history checked
 - [ ] Lore checked
@@ -229,6 +238,7 @@ If not reporting, skip steps 4.1–4.2 but still update NOTES.md.
 
 ```
 PHASE 3 COMPLETE: Investigation finished
+  Reproduction: <reproduced | not reproduced | skipped: reason>
   Root cause: <identified | theory | unknown>
   Fix: <patch ready | recommendation | needs upstream work | not reporting>
 ```
@@ -284,8 +294,9 @@ PHASE 4 COMPLETE: Output generated
 | Tool | Error | Action |
 |------|-------|--------|
 | semcode lore | Error or empty | Retry once → `lei` CLI → `git log --grep`. Max 3 total attempts per query. |
-| semcode code | Error | Fall back to grep/find. |
+| semcode code | Error | Verify cwd with `pwd` (must be Linux repo root). Fall back to grep/find. |
 | `gh run view` | Rate limit or error | Wait 10s, retry once. If still failing, skip that run. |
 | `gh issue list` | Error | Retry once. If failing, proceed with empty skip list. |
 | `lei` | Unavailable | Fall back to `git log --grep`. |
+| `git` | Unexpected output | Run `pwd` to verify cwd is the Linux repo root. If wrong, run `cd $GITHUB_WORKSPACE` to return to the workspace root. |
 | Build / vmtest | Failure | Record error, do not retry more than once. |
