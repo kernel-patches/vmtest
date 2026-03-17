@@ -2,15 +2,16 @@
 """Stagger CI runs during KPD rebase storms.
 
 When KPD rebases all PR branches after an upstream commit, hundreds of
-workflow runs fire at once.  This script detects the storm and waits for
-it to subside before letting the expensive build jobs start.
+workflow runs fire at once.  This script detects the storm and sleeps
+for a random delay to spread the load.
 
 Storm = all of:
   1. PR synchronize event (force-push rebase, not a new PR)
   2. Base branch updated within the last 30 minutes (KPD just mirrored)
-  3. Active workflow runs (queued + in-progress) >= half of open PRs
+  3. More than 5 active workflow runs (queued + in-progress)
+  4. Active runs >= 20% of open PRs
 
-Re-checks in a loop with random 1-15 min sleeps.  Gives up after 2 hours.
+If detected, sleeps a random 1-10 minutes then proceeds.
 cancel-in-progress on the concurrency group kills sleeping runs on new pushes.
 """
 
@@ -22,10 +23,10 @@ from datetime import datetime, timezone
 import requests
 
 BASE_BRANCH_RECENCY_S = 1800  # base branch "just updated" threshold
-STORM_RATIO = 0.5  # active runs / open PRs threshold
-WAIT_MIN_S = 60  # min sleep per iteration
-WAIT_MAX_S = 900  # max sleep per iteration
-MAX_TOTAL_WAIT_S = 7200  # hard cap on total wait
+STORM_RATIO = 0.2  # active runs / open PRs threshold
+STORM_MIN_ACTIVE = 5  # minimum active runs to consider a storm
+WAIT_MIN_S = 60  # min delay
+WAIT_MAX_S = 600  # max delay
 
 
 def gh_api(endpoint):
@@ -75,29 +76,6 @@ def open_pr_count(repo):
         return 0
 
 
-def is_storm(repo, base_branch):
-    age = base_branch_age_s(repo, base_branch)
-    if age is None or age > BASE_BRANCH_RECENCY_S:
-        print(f"Base branch {base_branch} updated {age}s ago — no storm.")
-        return False
-
-    active = active_run_count(repo)
-    open_prs = open_pr_count(repo)
-    if open_prs == 0:
-        return False
-
-    ratio = active / open_prs
-    if ratio < STORM_RATIO:
-        print(f"{active} active / {open_prs} PRs ({ratio:.0%}) — no storm.")
-        return False
-
-    print(
-        f"Storm: base {base_branch} updated {age:.0f}s ago, "
-        f"{active} active / {open_prs} PRs ({ratio:.0%})."
-    )
-    return True
-
-
 def main():
     action = os.environ.get("GITHUB_EVENT_ACTION", "")
     repo = os.environ.get("GITHUB_REPOSITORY", "")
@@ -109,16 +87,33 @@ def main():
     if not repo or not base:
         return
 
-    start = time.monotonic()
-    while is_storm(repo, base):
-        elapsed = time.monotonic() - start
-        remaining = MAX_TOTAL_WAIT_S - elapsed
-        if remaining <= 0:
-            print(f"Hit {MAX_TOTAL_WAIT_S}s cap — proceeding.")
-            break
-        delay = random.randint(WAIT_MIN_S, min(WAIT_MAX_S, int(remaining)))
-        print(f"Waiting {delay}s (elapsed: {elapsed:.0f}s)...")
-        time.sleep(delay)
+    age = base_branch_age_s(repo, base)
+    if age is None or age > BASE_BRANCH_RECENCY_S:
+        print(f"Base branch {base} updated {age}s ago — no storm.")
+        return
+
+    active = active_run_count(repo)
+    if active <= STORM_MIN_ACTIVE:
+        print(f"Only {active} active runs — no storm.")
+        return
+
+    open_prs = open_pr_count(repo)
+    if open_prs == 0:
+        return
+
+    ratio = active / open_prs
+    if ratio < STORM_RATIO:
+        print(f"{active} active / {open_prs} PRs ({ratio:.0%}) — no storm.")
+        return
+
+    delay = random.randint(WAIT_MIN_S, WAIT_MAX_S)
+    print(
+        f"Storm detected: base {base} updated {age:.0f}s ago, "
+        f"{active} active / {open_prs} PRs ({ratio:.0%}). "
+        f"Waiting {delay}s."
+    )
+    time.sleep(delay)
+    print("Proceeding.")
 
 
 if __name__ == "__main__":
