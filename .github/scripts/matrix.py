@@ -135,6 +135,7 @@ class BuildConfig:
     run_veristat: bool = False
     parallel_tests: bool = False
     build_release: bool = False
+    is_netdev: bool = False
 
     @property
     def runs_on(self) -> List[str]:
@@ -184,7 +185,7 @@ class BuildConfig:
         if self.llvm_version >= 18:
             tests_list.append("test_progs_cpuv4")
 
-        if self.arch in [Arch.X86_64, Arch.AARCH64]:
+        if self.arch in [Arch.X86_64, Arch.AARCH64] and not self.is_netdev:
             tests_list.append("sched_ext")
 
         # Don't run GCC BPF runner, because too many tests are failing
@@ -207,6 +208,7 @@ class BuildConfig:
             "run_veristat": self.run_veristat,
             "parallel_tests": self.parallel_tests,
             "build_release": self.build_release,
+            "is_netdev": self.is_netdev,
             "runs_on": self.runs_on,
             "tests": self.tests,
             "build_runs_on": self.build_runs_on,
@@ -269,6 +271,17 @@ if __name__ == "__main__":
     # Outside of managed repositories only run on x86_64
     if not is_managed_repo():
         matrix = [config for config in matrix if config.arch == Arch.X86_64]
+
+    # Detect netdev PRs: head repo is linux-netdev/testing-bpf-ci and branch is to-test
+    pr_head_repo = os.environ.get("PR_HEAD_REPO", "")
+    head_ref = os.environ.get("GITHUB_HEAD_REF", "")
+    is_netdev = pr_head_repo == "linux-netdev/testing-bpf-ci" and head_ref == "to-test"
+    if is_netdev:
+        print("Netdev PR detected, disabling BPF-specific jobs")
+        for config in matrix:
+            config.run_veristat = False
+            config.build_release = False
+            config.is_netdev = True
 
     json_matrix = json.dumps({"include": [config.to_dict() for config in matrix]})
     print(json.dumps(json.loads(json_matrix), indent=4))
