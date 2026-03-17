@@ -57,6 +57,11 @@ on:
         type: boolean
         description: Build selftests with -O2 optimization in addition to non-optimized build.
         default: false
+      is_netdev:
+        required: true
+        type: boolean
+        description: Whether this is a netdev PR. When true, BPF-specific jobs like GCC BPF are skipped.
+        default: false
     secrets:
       AWS_ROLE_ARN:
         required: true
@@ -179,7 +184,7 @@ jobs:
 
   gcc-bpf:
     name: 'GCC BPF'
-    if: ${{ inputs.arch == 'x86_64' }}
+    if: ${{ inputs.arch == 'x86_64' && !inputs.is_netdev }}
     uses: ./.github/workflows/gcc-bpf.yml
     needs: [build]
     with:

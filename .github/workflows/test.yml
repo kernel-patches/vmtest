@@ -33,6 +33,7 @@ jobs:
       - id: set-matrix-impl
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT_READ_RUNNERS }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: |
           python3 .github/scripts/matrix.py
 
@@ -64,5 +65,6 @@ jobs:
       # Download sources
       download_sources: ${{ github.repository == 'kernel-patches/vmtest' }}
       build_release: ${{ matrix.build_release }}
+      is_netdev: ${{ matrix.is_netdev }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
