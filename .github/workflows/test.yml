@@ -30,6 +30,13 @@ jobs:
         run: |
           sudo apt-get -y update
           sudo apt-get -y install python3-requests
+      - name: Stagger if runners are busy
+        if: ${{ github.event.action == 'synchronize' && github.repository == 'kernel-patches/bpf' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_ACTION: ${{ github.event.action }}
+          PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: python3 .github/scripts/stagger.py
       - id: set-matrix-impl
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT_READ_RUNNERS }}
