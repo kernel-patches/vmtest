@@ -74,7 +74,7 @@ jobs:
           gcc-version: ${{ inputs.gcc_version }}
           llvm-version: ${{ inputs.llvm_version }}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}
           path: ${{ env.REPO_ROOT }}
@@ -107,7 +107,7 @@ jobs:
           kbuild-output: ${{ env.REPO_ROOT }}/kbuild-output
           repo-root: ${{ env.REPO_ROOT }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: selftests-bpf-asan-${{ inputs.arch }}-${{ inputs.toolchain_full }}
           if-no-files-found: error
@@ -126,13 +126,13 @@ jobs:
       ALLOWLIST_FILE: /tmp/allowlist
       DENYLIST_FILE: /tmp/denylist
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .github
             ci
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}
           path: ${{ env.REPO_ROOT }}
@@ -141,7 +141,7 @@ jobs:
         working-directory: ${{ env.REPO_ROOT }}
         run: zstd -d -T0 vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst --stdout | tar -xf -
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: selftests-bpf-asan-${{ inputs.arch }}-${{ inputs.toolchain_full }}
           path: ${{ env.REPO_ROOT }}
