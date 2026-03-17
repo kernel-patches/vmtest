@@ -29,7 +29,7 @@ jobs:
       SCX_BUILD_OUTPUT: ${{ github.workspace }}/scx-build-output
       SCX_REVISION: main
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .github
@@ -40,7 +40,7 @@ jobs:
           output-dir: ${{ env.SCX_BUILD_OUTPUT }}
 
       - name: Upload sched-ext build output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sched-ext-${{ inputs.arch }}-${{ inputs.toolchain_full }}
           if-no-files-found: error
@@ -64,14 +64,14 @@ jobs:
 
     steps:
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .github
             ci
 
       - name: Download kernel build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: vmlinux-${{ env.ARCH_AND_TOOL }}
           path: .
@@ -80,7 +80,7 @@ jobs:
         run: zstd -d -T0  vmlinux-${{ env.ARCH_AND_TOOL }}.tar.zst --stdout | tar -xf -
 
       - name: Download sched-ext build output
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: sched-ext-${{ inputs.arch }}-${{ inputs.toolchain_full }}
           path: ${{ env.SCX_BUILD_OUTPUT }}

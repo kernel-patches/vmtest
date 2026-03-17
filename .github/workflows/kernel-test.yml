@@ -52,13 +52,13 @@ jobs:
       ALLOWLIST_FILE: /tmp/allowlist
       DENYLIST_FILE: /tmp/denylist
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .github
             ci
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}
           path: .
@@ -95,7 +95,7 @@ jobs:
           kbuild-output: ${{ env.REPO_ROOT }}/kbuild-output
 
       - if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tmon-logs-${{ inputs.arch }}-${{ inputs.toolchain_full }}-${{ inputs.test }}
           if-no-files-found: ignore

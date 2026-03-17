@@ -171,7 +171,7 @@ jobs:
           # Only on pushed changes are build artifacts actually cached, because
           # of github.com/actions/cache's cache isolation logic.
           rm -rf "${KBUILD_OUTPUT}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}${{ inputs.release && '-release' || '' }}
           if-no-files-found: error
