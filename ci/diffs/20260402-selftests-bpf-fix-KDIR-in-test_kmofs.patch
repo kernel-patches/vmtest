@@ -1,0 +1,23 @@
+From c3b059aa07fadec87653996ceae5013f63ba03ad Mon Sep 17 00:00:00 2001
+From: Ihor Solodrai <ihor.solodrai@linux.dev>
+Date: Thu, 2 Apr 2026 17:44:19 -0700
+Subject: [PATCH] selftests/bpf: fix KDIR in test_kmofs
+
+---
+ tools/testing/selftests/bpf/test_kmods/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/testing/selftests/bpf/test_kmods/Makefile b/tools/testing/selftests/bpf/test_kmods/Makefile
+index 63c4d3f6a12f..c2246263ed8d 100644
+--- a/tools/testing/selftests/bpf/test_kmods/Makefile
++++ b/tools/testing/selftests/bpf/test_kmods/Makefile
+@@ -1,5 +1,5 @@
+ TEST_KMOD_DIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+-KDIR ?= $(abspath $(TEST_KMOD_DIR)/../../../../..)
++KDIR := $(abspath $(TEST_KMOD_DIR)/../../../../..)
+ 
+ ifeq ($(V),1)
+ Q =
+-- 
+2.53.0
+
