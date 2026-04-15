@@ -128,7 +128,7 @@ jobs:
         with:
           repository: 'masoncl/review-prompts'
           path: 'review-prompts'
-          ref: main
+          ref: 6c277db09b2228602aa72f2d723f969d28eb8deb
 
       - name: Set up review prompts
         shell: bash
