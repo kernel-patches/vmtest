@@ -128,12 +128,11 @@ jobs:
         with:
           repository: 'masoncl/review-prompts'
           path: 'review-prompts'
-          ref: 6c277db09b2228602aa72f2d723f969d28eb8deb
+          ref: main
 
       - name: Set up review prompts
         shell: bash
         run: |
-          cd review-prompts/kernel/scripts && ./claude-setup.sh && cd -
           mv review-prompts/kernel ${{ github.workspace }}/review
           rm -rf review-prompts
 
@@ -150,11 +149,11 @@ jobs:
           prompt: |
             Current directory is the root of a Linux Kernel git repository.
 
-            Read the prompt review/review-core.md
+            Read the prompt review/agent/orc.md
 
-            Using the prompt, do a deep dive regression analysis of the HEAD commit.
+            Analyze commit HEAD using prompts from review/
 
-            Use commit range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} for the false-positive-guide.md section.
+            This commit is part of a series with git range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
 
       # If Claude produced review-inline.txt then it found something
       # Post a comment on PR and fail the job
