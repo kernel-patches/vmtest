@@ -67,24 +67,31 @@ jobs:
           git checkout -B "${HEAD_BRANCH}" "refs/remotes/origin/${BASE_BRANCH}"
           git merge --no-ff --no-edit "refs/remotes/${UPSTREAM_REMOTE}/${UPSTREAM_BRANCH}"
 
+      - name: Generate GitHub App token
+        if: ${{ github.repository == 'kernel-patches/bpf' }}
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.KP_REVIEW_BOT_APP_ID }}
+          private-key: ${{ secrets.KP_REVIEW_BOT_APP_PRIVATE_KEY }}
+
       - name: Push linux-next branch
         if: ${{ github.repository == 'kernel-patches/bpf' }}
         working-directory: repo
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         shell: bash
         run: |
           set -euo pipefail
 
           HEAD_BRANCH='linux-next'
-          git remote set-url origin \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/kernel-patches/bpf.git"
+          PUSH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/kernel-patches/bpf.git"
 
           if git show-ref --verify --quiet "refs/remotes/origin/${HEAD_BRANCH}"; then
             old_head=$(git rev-parse "refs/remotes/origin/${HEAD_BRANCH}")
             git push \
               --force-with-lease="refs/heads/${HEAD_BRANCH}:${old_head}" \
-              origin HEAD:"refs/heads/${HEAD_BRANCH}"
+              "${PUSH_URL}" HEAD:"refs/heads/${HEAD_BRANCH}"
           else
-            git push origin HEAD:"refs/heads/${HEAD_BRANCH}"
+            git push "${PUSH_URL}" HEAD:"refs/heads/${HEAD_BRANCH}"
           fi

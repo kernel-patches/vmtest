@@ -68,8 +68,8 @@ jobs:
       kernel: ${{ matrix.kernel }}
       tests: ${{ toJSON(matrix.tests) }}
       run_veristat: ${{ matrix.run_veristat }}
-      # We only run tests on pull requests.
-      run_tests: ${{ github.event_name != 'push' }}
+      # Pushes normally build only, except linux-next syncs which should run tests too.
+      run_tests: ${{ github.event_name != 'push' || github.ref_name == 'linux-next' }}
       # Download sources
       download_sources: ${{ github.repository == 'kernel-patches/vmtest' }}
       build_release: ${{ matrix.build_release }}
