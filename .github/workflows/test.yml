@@ -8,6 +8,7 @@ on:
       - bpf-next_base
       - bpf-net_base
       - for-next_base
+      - linux-next
 
 concurrency:
   group: ci-test-${{ github.ref_name }}
