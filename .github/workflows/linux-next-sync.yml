@@ -72,8 +72,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
-          app-id: ${{ secrets.KP_REVIEW_BOT_APP_ID }}
-          private-key: ${{ secrets.KP_REVIEW_BOT_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.KPD_BOT_APP_ID }}
+          private-key: ${{ secrets.KPD_BOT_PRIVATE_KEY }}
 
       - name: Push linux-next branch
         if: ${{ github.repository == 'kernel-patches/bpf' }}
