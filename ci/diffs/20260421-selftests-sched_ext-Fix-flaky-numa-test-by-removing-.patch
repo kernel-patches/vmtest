@@ -1,0 +1,64 @@
+From bded7ac722ec1b225eda0e023aee8fa985793be4 Mon Sep 17 00:00:00 2001
+From: Ihor Solodrai <ihor.solodrai@linux.dev>
+Date: Tue, 21 Apr 2026 09:20:41 -0700
+Subject: [PATCH 1/2] selftests/sched_ext: Fix flaky numa test by removing racy
+ idle check
+
+The numa test intermittently fails in CI with:
+
+  scx_bpf_error("CPU 2 should be marked as busy")
+
+The is_cpu_idle() check in numa_select_cpu is inherently racy: between
+scx_bpf_pick_idle_cpu_node() atomically clearing a CPU's idle bit and
+the subsequent is_cpu_idle() re-check, the CPU can legitimately
+transition back to idle via __scx_update_idle() -> update_builtin_idle().
+
+This is a classic TOCTOU race that cannot be fixed without holding a lock
+across both operations, which is not possible from BPF context.
+
+Remove the is_cpu_idle() helper and its call. The remaining NUMA node
+membership check (scx_bpf_cpu_node(cpu) != node) is not racy since a
+CPU's NUMA node is a static hardware property.
+
+Fixes: 3034f3b053b5 ("selftests/sched_ext: Add NUMA-aware test")
+Signed-off-by: Ihor Solodrai <ihor.solodrai@pm.me>
+---
+ tools/testing/selftests/sched_ext/numa.bpf.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/tools/testing/selftests/sched_ext/numa.bpf.c b/tools/testing/selftests/sched_ext/numa.bpf.c
+index 78cc49a7f9a6..89b29acef022 100644
+--- a/tools/testing/selftests/sched_ext/numa.bpf.c
++++ b/tools/testing/selftests/sched_ext/numa.bpf.c
+@@ -19,18 +19,6 @@ UEI_DEFINE(uei);
+ 
+ const volatile unsigned int __COMPAT_SCX_PICK_IDLE_IN_NODE;
+ 
+-static bool is_cpu_idle(s32 cpu, int node)
+-{
+-	const struct cpumask *idle_cpumask;
+-	bool idle;
+-
+-	idle_cpumask = __COMPAT_scx_bpf_get_idle_cpumask_node(node);
+-	idle = bpf_cpumask_test_cpu(cpu, idle_cpumask);
+-	scx_bpf_put_cpumask(idle_cpumask);
+-
+-	return idle;
+-}
+-
+ s32 BPF_STRUCT_OPS(numa_select_cpu,
+ 		   struct task_struct *p, s32 prev_cpu, u64 wake_flags)
+ {
+@@ -48,9 +36,6 @@ s32 BPF_STRUCT_OPS(numa_select_cpu,
+ 		cpu = __COMPAT_scx_bpf_pick_any_cpu_node(p->cpus_ptr, node,
+ 						__COMPAT_SCX_PICK_IDLE_IN_NODE);
+ 
+-	if (is_cpu_idle(cpu, node))
+-		scx_bpf_error("CPU %d should be marked as busy", cpu);
+-
+ 	if (__COMPAT_scx_bpf_cpu_node(cpu) != node)
+ 		scx_bpf_error("CPU %d should be in node %d", cpu, node);
+ 
+-- 
+2.53.0
+
