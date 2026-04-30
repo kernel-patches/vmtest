@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   sync-linux-next:
+    if: ${{ github.repository == 'kernel-patches/bpf' }}
     runs-on: ubuntu-slim
     steps:
       - name: Clone kernel-patches/bpf (blobless)
