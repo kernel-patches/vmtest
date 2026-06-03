@@ -1,0 +1,87 @@
+From 0f2eb195e797359c9c6027a27adda606c226490d Mon Sep 17 00:00:00 2001
+From: Ihor Solodrai <ihor.solodrai@linux.dev>
+Date: Tue, 21 Apr 2026 09:21:25 -0700
+Subject: [PATCH 2/2] selftests/sched_ext: Fix rt_stall flaky measurement
+ window
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The rt_stall test fails intermittently in CI because it measures total
+CPU time since fork rather than the delta during the sleep(RUN_TIME)
+measurement window.
+
+Children start busy-looping immediately after signal_ready(), but the
+parent still needs to process both pipe reads before calling sleep().
+During this gap, both children accumulate CPU time — with the RT child
+dominating. This inflates the RT denominator so the FAIR/EXT ratio drops
+below the 4% threshold. This was observed in CI with the RT task
+accumulating 5.69s of CPU time in a 5-second window.
+
+Fix by taking before/after snapshots of each child's CPU time around the
+sleep(RUN_TIME) window and computing deltas. This eliminates the
+pre-measurement bias regardless of how long the parent takes between
+wait_ready() and sleep().
+
+Fixes: 0b82cc331d2e ("selftests/sched_ext: Fix rt_stall flaky failure")
+Signed-off-by: Ihor Solodrai <ihor.solodrai@pm.me>
+---
+ tools/testing/selftests/sched_ext/rt_stall.c | 22 +++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/tools/testing/selftests/sched_ext/rt_stall.c b/tools/testing/selftests/sched_ext/rt_stall.c
+index a5041fc2e44f..ad14712e0127 100644
+--- a/tools/testing/selftests/sched_ext/rt_stall.c
++++ b/tools/testing/selftests/sched_ext/rt_stall.c
+@@ -148,7 +148,7 @@ static bool sched_stress_test(bool is_ext)
+ 	const float expected_min_ratio = 0.04; /* 4% */
+ 	const char *class_str = is_ext ? "EXT" : "FAIR";
+ 
+-	float ext_runtime, rt_runtime, actual_ratio;
++	float ext_runtime, rt_runtime, ext_before, rt_before, actual_ratio;
+ 	int ext_pid, rt_pid;
+ 	int ext_ready[2], rt_ready[2];
+ 
+@@ -202,21 +202,37 @@ static bool sched_stress_test(bool is_ext)
+ 	wait_ready(ext_ready[0]);
+ 	wait_ready(rt_ready[0]);
+ 
++	/*
++	 * Snapshot CPU times before the measurement window. Children
++	 * start busy-looping right after signal_ready(), so they may
++	 * accumulate CPU time while the parent is still processing
++	 * pipe reads. Measuring deltas eliminates this bias.
++	 */
++	ext_before = get_process_runtime(ext_pid);
++	if (ext_before == -1)
++		ksft_exit_fail_msg("Error getting pre-sleep runtime for %s task (PID %d)\n",
++				   class_str, ext_pid);
++	rt_before = get_process_runtime(rt_pid);
++	if (rt_before == -1)
++		ksft_exit_fail_msg("Error getting pre-sleep runtime for RT task (PID %d)\n",
++				   rt_pid);
++
+ 	/* Let the processes run for the specified time */
+ 	sleep(RUN_TIME);
+ 
+-	/* Get runtime for the EXT task */
++	/* Get runtime deltas for the measurement window */
+ 	ext_runtime = get_process_runtime(ext_pid);
+ 	if (ext_runtime == -1)
+ 		ksft_exit_fail_msg("Error getting runtime for %s task (PID %d)\n",
+ 				   class_str, ext_pid);
++	ext_runtime -= ext_before;
+ 	ksft_print_msg("Runtime of %s task (PID %d) is %f seconds\n",
+ 		       class_str, ext_pid, ext_runtime);
+ 
+-	/* Get runtime for the RT task */
+ 	rt_runtime = get_process_runtime(rt_pid);
+ 	if (rt_runtime == -1)
+ 		ksft_exit_fail_msg("Error getting runtime for RT task (PID %d)\n", rt_pid);
++	rt_runtime -= rt_before;
+ 	ksft_print_msg("Runtime of RT task (PID %d) is %f seconds\n", rt_pid, rt_runtime);
+ 
+ 	/* Kill the processes */
+-- 
+2.53.0
+
