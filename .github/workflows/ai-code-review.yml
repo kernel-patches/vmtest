@@ -94,12 +94,20 @@ jobs:
           FETCH_DEPTH: 100
 
       # This manipulation is necessary to make sure that
-      # ${{ github.workspace }} is the root of the Linux git repo
+      # ${{ github.workspace }} is the root of the Linux git repo.
+      #
+      # The AI review config lives in ci/, which is present on every *_base
+      # branch and thus in this checkout (the pull_request merge ref), but not
+      # necessarily in the PR head tree fetched above (get-linux-source pulls
+      # head.sha only). Preserve the checked-out ci/ across the move instead of
+      # deleting it, dropping only the head tree's own ci/ to avoid a collision,
+      # so the config is available regardless of whether the head carries it.
       - name: Move linux source in place
         shell: bash
         run: |
-          rm -rf .git .github ci
+          rm -rf .git .github
           cd .kernel
+          rm -rf ci
           mv -t .. $(ls -A)
           cd ..
           rmdir .kernel
