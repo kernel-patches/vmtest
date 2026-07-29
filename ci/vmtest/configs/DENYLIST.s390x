@@ -8,3 +8,4 @@ sock_iter_batch/udp                        # SO_REUSEPORT bind(0) port collision
 tc_edt
 tc_tunnel/ip6gre*                          # connect() 1000ms too short for IPv6 neigh resolution under emulation; vmtest#483
 wq                                         # usleep(50) too short under emulation; vmtest#455
+libarena/parallel_test_*                   # in-BPF spin barriers time out under emulation; same class as arena_spin_lock
