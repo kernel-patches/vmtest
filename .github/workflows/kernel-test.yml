@@ -94,6 +94,22 @@ jobs:
           # it was extracted from the artifacts.
           kbuild-output: ${{ env.REPO_ROOT }}/kbuild-output
 
+      # run-vmtest normalizes these names itself, but it does so after the VM
+      # exits, so a timeout or a dead VM kills the step before it gets there.
+      # The upload below runs regardless, so redo it here to be safe.
+      - if: ${{ always() }}
+        name: Normalize traffic monitor log names
+        shell: bash
+        run: |
+          dir=/tmp/tmon_pcap
+          [ -d "$dir" ] || exit 0
+          find "$dir" -depth -name '*[":<>|*?]*' -print0 |
+          while IFS= read -r -d '' path; do
+            base=$(basename "$path")
+            new="$(dirname "$path")/$(printf '%s' "$base" | tr '":<>|*?\r\n' '_________')"
+            [ "$path" = "$new" ] || mv -v -- "$path" "$new"
+          done
+
       - if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
