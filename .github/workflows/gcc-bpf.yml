@@ -36,6 +36,11 @@ jobs:
       BPF_NEXT_BASE_BRANCH: 'master'
       GCC_BPF_INSTALL_DIR: ${{ github.workspace }}/gcc-bpf
       GCC_BPF_RELEASE_REPO: 'theihor/gcc-bpf'
+      # Major GCC version used to compile the BPF selftest programs. The latest
+      # release of that series is used. Override with the repo variable
+      # GCC_BPF_VERSION (Settings -> Secrets and variables -> Actions ->
+      # Variables) to try another series without a code change.
+      GCC_BPF_VERSION: ${{ vars.GCC_BPF_VERSION || '15' }}
       KBUILD_OUTPUT: ${{ github.workspace }}/src/kbuild-output
       REPO_ROOT: ${{ github.workspace }}/src
 
@@ -85,7 +90,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .github/scripts/download-gh-release.sh ${{ env.GCC_BPF_RELEASE_REPO }} ${{ env.GCC_BPF_INSTALL_DIR }}
+        run: .github/scripts/download-gh-release.sh ${{ env.GCC_BPF_RELEASE_REPO }} ${{ env.GCC_BPF_INSTALL_DIR }} "gcc-${GCC_BPF_VERSION}-"
 
       - name: Build selftests/bpf/test_progs-bpf_gcc
         uses: libbpf/ci/build-selftests@v4
