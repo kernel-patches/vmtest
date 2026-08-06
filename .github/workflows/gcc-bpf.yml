@@ -40,7 +40,7 @@ jobs:
       # release of that series is used. Override with the repo variable
       # GCC_BPF_VERSION (Settings -> Secrets and variables -> Actions ->
       # Variables) to try another series without a code change.
-      GCC_BPF_VERSION: ${{ vars.GCC_BPF_VERSION || '15' }}
+      GCC_BPF_VERSION: ${{ vars.GCC_BPF_VERSION || '16' }}
       KBUILD_OUTPUT: ${{ github.workspace }}/src/kbuild-output
       REPO_ROOT: ${{ github.workspace }}/src
 
