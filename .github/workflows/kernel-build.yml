@@ -104,7 +104,7 @@ jobs:
           repo-root: ${{ env.REPO_ROOT }}
 
       - name: Setup build environment
-        uses: libbpf/ci/setup-build-env@v4
+        uses: libbpf/ci/setup-build-env@cross-sysroot
         with:
           arch: ${{ inputs.arch }}
           gcc-version: ${{ inputs.gcc_version }}
