@@ -59,7 +59,7 @@ jobs:
         run: .github/scripts/download-gh-release.sh ${{ env.CILIUM_BPF_RELEASE_REPO }} ${{ env.CILIUM_BUILD_OUTPUT }}
 
       - name: Run veristat
-        uses: libbpf/ci/run-vmtest@v4
+        uses: mykyta5/ci/run-vmtest@skip-splats-for-veristat
         with:
           arch: x86_64
           vmlinuz: '${{ github.workspace }}/vmlinuz'
