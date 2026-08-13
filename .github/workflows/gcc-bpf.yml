@@ -24,15 +24,20 @@ on:
       download_sources:
         required: true
         type: boolean
+      run_tests:
+        required: true
+        type: boolean
+        description: Whether or not to run the test job.
 
 jobs:
-  test:
-    name: GCC BPF
+  build:
+    name: GCC BPF build
     runs-on:
       - ${{ format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
       - image:custom-linux-ghcr.io/kernel-patches/runner:kbuilder-debian-x86_64
     env:
       ARCH: ${{ inputs.arch }}
+      ARTIFACTS_ARCHIVE: ${{ github.workspace }}/selftests-bpf-gcc-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst
       BPF_NEXT_BASE_BRANCH: 'master'
       GCC_BPF_INSTALL_DIR: ${{ github.workspace }}/gcc-bpf
       GCC_BPF_RELEASE_REPO: 'theihor/gcc-bpf'
@@ -98,3 +103,79 @@ jobs:
           kernel-root: ${{ env.REPO_ROOT }}
           llvm-version: ${{ inputs.llvm_version }}
           toolchain: ${{ inputs.toolchain }}
+
+      - name: Tar artifacts
+        uses: libbpf/ci/tar-artifacts@v4
+        env:
+          ARCHIVE_BPF_SELFTESTS: 'true'
+          ARCHIVE_KBUILD_OUTPUT: '' # emptystring means false
+        with:
+          arch: ${{ inputs.arch }}
+          archive: ${{ env.ARTIFACTS_ARCHIVE }}
+          kbuild-output: ${{ env.KBUILD_OUTPUT }}
+          repo-root: ${{ env.REPO_ROOT }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: selftests-bpf-gcc-${{ inputs.arch }}-${{ inputs.toolchain_full }}
+          if-no-files-found: error
+          path: ${{ env.ARTIFACTS_ARCHIVE }}
+
+  test:
+    name: GCC BPF
+    if: ${{ inputs.run_tests }}
+    runs-on: ${{ fromJSON(inputs.runs_on) }}
+    needs: [build]
+    timeout-minutes: 100
+    env:
+      ARCH: ${{ inputs.arch }}
+      REPO_ROOT: ${{ github.workspace }}
+      REPO_PATH: ""
+      DEPLOYMENT: ${{ github.repository == 'kernel-patches/bpf' && 'prod' || 'rc' }}
+      KERNEL_TEST: test_progs-bpf_gcc
+      ALLOWLIST_FILE: /tmp/allowlist
+      DENYLIST_FILE: /tmp/denylist
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            .github
+            ci
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}
+          path: ${{ env.REPO_ROOT }}
+
+      - name: Untar vmlinux
+        working-directory: ${{ env.REPO_ROOT }}
+        run: zstd -d -T0 vmlinux-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst --stdout | tar -xf -
+
+      # Overlays test_progs-bpf_gcc onto the selftests directory unpacked above.
+      - uses: actions/download-artifact@v7
+        with:
+          name: selftests-bpf-gcc-${{ inputs.arch }}-${{ inputs.toolchain_full }}
+          path: ${{ env.REPO_ROOT }}
+
+      - name: Untar test_progs-bpf_gcc
+        working-directory: ${{ env.REPO_ROOT }}
+        run: zstd -d -T0 selftests-bpf-gcc-${{ inputs.arch }}-${{ inputs.toolchain_full }}.tar.zst --stdout | tar -xf -
+
+      - name: Run selftests
+        uses: libbpf/ci/run-vmtest@v4
+        env:
+          ARCH: ${{ inputs.arch }}
+          DEPLOYMENT: ${{ env.DEPLOYMENT }}
+          LLVM_VERSION: ${{ inputs.llvm_version }}
+          SELFTESTS_BPF: ${{ github.workspace }}/selftests/bpf
+          VMTEST_CONFIGS: ${{ github.workspace }}/ci/vmtest/configs
+          VMTEST_MEMORY: 5G
+          VMTEST_NUM_CPUS: 4
+          TEST_PROGS_WATCHDOG_TIMEOUT: 600
+        with:
+          arch: ${{ inputs.arch }}
+          vmlinuz: '${{ github.workspace }}/vmlinuz'
+          kernel-root: ${{ env.REPO_ROOT }}
+          max-cpu: 8
+          kernel-test: ${{ env.KERNEL_TEST }}
+          kbuild-output: ${{ env.REPO_ROOT }}/kbuild-output
