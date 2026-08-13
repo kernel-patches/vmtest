@@ -188,11 +188,13 @@ jobs:
     uses: ./.github/workflows/gcc-bpf.yml
     needs: [build]
     with:
-      # GCC BPF does not need /dev/kvm, so use the "build" runners
-      runs_on: ${{ inputs.build_runs_on }}
+      # The tests run in a VM, so these must be the /dev/kvm capable runners.
+      # The build half of the workflow picks its own runner.
+      runs_on: ${{ inputs.runs_on }}
       arch: ${{ inputs.arch }}
       gcc_version: ${{ inputs.gcc_version }}
       llvm_version: ${{ inputs.llvm_version }}
       toolchain: ${{ inputs.toolchain }}
       toolchain_full: ${{ inputs.toolchain_full }}
       download_sources: ${{ inputs.download_sources }}
+      run_tests: ${{ inputs.run_tests }}
