@@ -96,6 +96,7 @@ global_percpu_data		# crashing kernel: bad .percpu address
 inner_array_lookup
 iters/iter_err_unsafe_asm_loop
 kfree_skb
+ksock_lsm
 l4lb_all/l4lb_noinline
 l4lb_all/l4lb_noinline_dynptr
 linked_list
