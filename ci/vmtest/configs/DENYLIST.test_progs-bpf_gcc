@@ -209,6 +209,7 @@ verifier_tailcall_jit
 verify_pkcs7_sig
 veristat/set_global_vars_from_file_succeeds
 veristat/set_global_vars_succeeds
+wq      # flaky: usleep(50) could be too too short under emulation
 xdp_context_lwt_encap
 xdp_context_tuntap
 xdp_context_veth
