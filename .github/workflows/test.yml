@@ -76,3 +76,9 @@ jobs:
       is_netdev: ${{ matrix.is_netdev }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+
+  build-bpftool:
+    name: Test bpftool build
+    uses: ./.github/workflows/build-bpftool.yml
+    with:
+      download_sources: ${{ github.repository == 'kernel-patches/vmtest' }}
