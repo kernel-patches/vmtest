@@ -137,6 +137,8 @@ sockmap_basic/sockmap copy
 sockmap_strp			# flaky
 spin_lock
 stream_arena_fault_address
+stream_oversize
+stream_partial_read
 stream_success/stream_arena_subprog_fault
 stream_syscall
 struct_ops_arena/arena_arg
