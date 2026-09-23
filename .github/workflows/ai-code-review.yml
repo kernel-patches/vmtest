@@ -131,18 +131,29 @@ jobs:
           subject=$(git log -1 --pretty=format:"%s" ${{ matrix.commit }})
           echo "subject=$subject" >> $GITHUB_OUTPUT
 
-      - name: Checkout prompts repo
+      - name: Checkout AI review configuration
         uses: actions/checkout@v6
         with:
-          repository: 'masoncl/review-prompts'
-          path: 'review-prompts'
+          repository: 'kernel-patches/bpf-ai-review'
+          path: 'bpf-ai-review'
           ref: main
+          submodules: true
 
-      - name: Set up review prompts
+      - name: Set up AI review
+        id: setup-ai-review
         shell: bash
+        env:
+          SHA: ${{ matrix.commit }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          mv review-prompts/kernel ${{ github.workspace }}/review
-          rm -rf review-prompts
+          bpf-ai-review/setup.sh ${{ github.workspace }} "$RUNNER_TEMP/trigger.md"
+          rm -rf bpf-ai-review
+          {
+            echo 'prompt<<EOF_TRIGGER_PROMPT'
+            cat "$RUNNER_TEMP/trigger.md"
+            echo 'EOF_TRIGGER_PROMPT'
+          } >> "$GITHUB_OUTPUT"
 
       - uses: anthropics/claude-code-action@v1
         with:
@@ -154,14 +165,7 @@ jobs:
             --mcp-config ci/claude/mcp.json
             --model us.anthropic.claude-opus-5
           allowed_bots: "kernel-patches-daemon-bpf,kernel-patches-review-bot"
-          prompt: |
-            Current directory is the root of a Linux Kernel git repository.
-
-            Read the prompt review/agent/orc.md
-
-            Analyze commit HEAD using prompts from review/
-
-            This commit is part of a series with git range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+          prompt: ${{ steps.setup-ai-review.outputs.prompt }}
 
       # If Claude produced review-inline.txt then it found something
       # Post a comment on PR and fail the job
