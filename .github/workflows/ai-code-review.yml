@@ -163,7 +163,8 @@ jobs:
           claude_args: |
             --max-turns 100
             --mcp-config ci/claude/mcp.json
-            --model us.anthropic.claude-opus-5
+            --model us.anthropic.claude-opus-5-5
+            --effort xhigh
           allowed_bots: "kernel-patches-daemon-bpf,kernel-patches-review-bot"
           prompt: ${{ steps.setup-ai-review.outputs.prompt }}
 
