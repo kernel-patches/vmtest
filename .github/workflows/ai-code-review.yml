@@ -71,12 +71,6 @@ jobs:
           app-id: ${{ secrets.KP_REVIEW_BOT_APP_ID }}
           private-key: ${{ secrets.KP_REVIEW_BOT_APP_PRIVATE_KEY }}
 
-      - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_BEDROCK_ROLE }}
-          aws-region: us-west-2
-
       - name: Set up .claude/settings.json
         shell: bash
         run: |
@@ -114,12 +108,15 @@ jobs:
 
       - name: semcode-index
         shell: bash
+        env:
+          # semcode-index --lore fetches into the lore archive baked into the
+          # image, and gitoxide needs a committer to update the reflog.
+          GIT_COMMITTER_NAME: semcode-index
+          GIT_COMMITTER_EMAIL: semcode-index@localhost
         run: |
-          git remote add bpf-next https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git
-          git fetch bpf-next
+          git fetch --no-tags https://github.com/kernel-patches/bpf.git bpf-next
           git checkout ${{ matrix.commit }} -b patch-series.local
-          MERGE_BASE=$(git merge-base bpf-next/master HEAD)
-          rm -rf /ci/.semcode.db/lore
+          MERGE_BASE=$(git merge-base FETCH_HEAD HEAD)
           ln -s /ci/.semcode.db ${{ github.workspace }}/.semcode.db
           semcode-index --git "${MERGE_BASE}..HEAD"
           semcode-index --lore bpf
@@ -154,6 +151,14 @@ jobs:
             cat "$RUNNER_TEMP/trigger.md"
             echo 'EOF_TRIGGER_PROMPT'
           } >> "$GITHUB_OUTPUT"
+
+      # The STS session lasts an hour: start it right before Claude Code,
+      # not before the setup steps.
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BEDROCK_ROLE }}
+          aws-region: us-west-2
 
       - uses: anthropics/claude-code-action@v1
         with:
