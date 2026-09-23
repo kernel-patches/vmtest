@@ -152,7 +152,8 @@ jobs:
           claude_args: |
             --max-turns 100
             --mcp-config ci/claude/mcp.json
-            --model us.anthropic.claude-opus-5
+            --model us.anthropic.claude-opus-5-5
+            --effort xhigh
           allowed_bots: "kernel-patches-daemon-bpf,kernel-patches-review-bot"
           prompt: |
             Current directory is the root of a Linux Kernel git repository.
