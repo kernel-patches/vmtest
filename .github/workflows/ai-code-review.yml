@@ -85,7 +85,7 @@ jobs:
           dest: .kernel
         env:
           REFERENCE_REPO_PATH: /libbpfci/mirrors/linux
-          FETCH_DEPTH: 100
+          FETCH_DEPTH: 0
 
       # This manipulation is necessary to make sure that
       # ${{ github.workspace }} is the root of the Linux git repo.
