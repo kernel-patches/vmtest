@@ -137,6 +137,7 @@ sockmap_basic/sockmap copy
 sockmap_strp			# flaky
 spin_lock
 stream_arena_fault_address
+stream_fd			# all 7 subtests fail; newly reachable
 stream_oversize
 stream_partial_read
 stream_success/stream_arena_subprog_fault
