@@ -21,6 +21,7 @@ jobs:
     continue-on-error: true
     outputs:
       commits: ${{ steps.get-commits.outputs.commits }}
+      has-commits: ${{ steps.get-commits.outputs.has-commits }}
     steps:
 
       - name: Download Linux source tree
@@ -39,13 +40,21 @@ jobs:
         id: get-commits
         run: |
           cd .kernel
+          if [ "$(git log -1 --format=%s ${{ github.event.pull_request.head.sha }})" = "Dummy commit" ]; then
+            echo "::notice::KPD Dummy commit, the series did not apply: skipping AI review"
+            echo "commits=[]" >> $GITHUB_OUTPUT
+            echo "has-commits=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           tmp=$(mktemp)
-          git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | head -n 50 > pr_commits.txt
+          git rev-list --max-count=50 ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} > pr_commits.txt
           cat pr_commits.txt | jq -R -s -c 'split("\n")[:-1]' > $tmp
           echo "commits=$(cat $tmp)" >> $GITHUB_OUTPUT
+          echo "has-commits=$([ -s pr_commits.txt ] && echo true || echo false)" >> $GITHUB_OUTPUT
 
   ai-review:
     needs: get-commits
+    if: needs.get-commits.outputs.has-commits == 'true'
     runs-on:
       - ${{ format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
       - image:custom-linux-ghcr.io/kernel-patches/runner:ai-review
