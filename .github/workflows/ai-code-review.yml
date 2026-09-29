@@ -74,13 +74,6 @@ jobs:
             .github
             ci
 
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.KP_REVIEW_BOT_APP_ID }}
-          private-key: ${{ secrets.KP_REVIEW_BOT_APP_PRIVATE_KEY }}
-
       - name: Set up .claude/settings.json
         shell: bash
         run: |
@@ -197,7 +190,8 @@ jobs:
         timeout-minutes: 65
         with:
           show_full_output: true
-          github_token: ${{ steps.app-token.outputs.token }}
+          # Keep the review bot's App token out of the agent's environment.
+          github_token: ${{ github.token }}
           use_bedrock: "true"
           claude_args: |
             --max-turns 100
@@ -223,6 +217,14 @@ jobs:
               cat $review_metadata || true
               echo "review_metadata=$review_metadata" >> $GITHUB_OUTPUT
           fi
+
+      - name: Generate GitHub App token
+        id: app-token
+        if: steps.check_review.outputs.review_file != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.KP_REVIEW_BOT_APP_ID }}
+          private-key: ${{ secrets.KP_REVIEW_BOT_APP_PRIVATE_KEY }}
 
       - name: Comment on PR
         if: steps.check_review.outputs.review_file != ''
