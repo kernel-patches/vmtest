@@ -210,7 +210,7 @@ jobs:
               cat $review_file || true
               echo "review_file=$review_file" >> $GITHUB_OUTPUT
           fi
-          review_metadata=$(find ${{ github.workspace }} -name review-metadata.json)
+          review_metadata=$(find ${{ github.workspace }} -name review-metadata.json -print -quit)
           if [ -s "$review_metadata" ]; then
               cat $review_metadata || true
               echo "review_metadata=$review_metadata" >> $GITHUB_OUTPUT
@@ -242,3 +242,10 @@ jobs:
         run: |
           echo "Review file found - failing the CI job"
           exit 42
+
+      - name: Fail CI job if the review did not complete
+        if: steps.check_review.outputs.review_metadata == ''
+        run: |
+          git diff --quiet ${{ matrix.commit }}^ ${{ matrix.commit }} && exit 0
+          echo "::error::review-metadata.json not found: the review did not complete"
+          exit 43
