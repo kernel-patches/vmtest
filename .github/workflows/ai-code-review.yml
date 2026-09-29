@@ -161,6 +161,17 @@ jobs:
             echo 'EOF_TRIGGER_PROMPT'
           } >> "$GITHUB_OUTPUT"
 
+      # The review scripts need them; the runner:ai-review image lacks both.
+      - name: Install python3 and jq
+        continue-on-error: true
+        timeout-minutes: 3
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends python3 jq
+
       # The STS session lasts an hour: start it right before Claude Code,
       # not before the setup steps.
       - name: Configure AWS Credentials (OIDC)
