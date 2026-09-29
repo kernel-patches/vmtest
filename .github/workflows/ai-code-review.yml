@@ -172,6 +172,17 @@ jobs:
           apt-get update -qq
           apt-get install -y -qq --no-install-recommends python3 jq
 
+      # orc.md skips the context agent when review-context/index.json exists.
+      - name: Create review context
+        shell: bash
+        env:
+          SHA: ${{ matrix.commit }}
+        run: |
+          timeout 300 python3 review/scripts/create_changes.py "$SHA" -o review-context || {
+            rm -rf review-context
+            echo "::warning::create_changes.py failed, the context agent will run"
+          }
+
       # The STS session lasts an hour: start it right before Claude Code,
       # not before the setup steps.
       - name: Configure AWS Credentials (OIDC)
