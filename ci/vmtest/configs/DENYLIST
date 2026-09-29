@@ -1,6 +1,7 @@
 verif_scale_pyperf600
 sockmap_basic/sockmap udp multi channels
 map_kptr
+verifier_linked_scalars/alu32_negative_offset
 
 # Flaky / deterministically-broken upstream tests — CI noise mitigation (all arches).
 # Drop each once the referenced upstream fix reaches the tested base branch.
