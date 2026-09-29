@@ -55,6 +55,7 @@ jobs:
   ai-review:
     needs: get-commits
     if: needs.get-commits.outputs.has-commits == 'true'
+    timeout-minutes: 120
     runs-on:
       - ${{ format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
       - image:custom-linux-ghcr.io/kernel-patches/runner:ai-review
@@ -116,6 +117,7 @@ jobs:
           rmdir .kernel
 
       - name: semcode-index
+        timeout-minutes: 30
         shell: bash
         env:
           # semcode-index --lore fetches into the lore archive baked into the
@@ -184,7 +186,7 @@ jobs:
           }
 
       # The STS session lasts an hour: start it right before Claude Code,
-      # not before the setup steps.
+      # not before the setup steps. Raise the Claude Code timeout with it.
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -192,6 +194,7 @@ jobs:
           aws-region: us-west-2
 
       - uses: anthropics/claude-code-action@v1
+        timeout-minutes: 65
         with:
           show_full_output: true
           github_token: ${{ steps.app-token.outputs.token }}
