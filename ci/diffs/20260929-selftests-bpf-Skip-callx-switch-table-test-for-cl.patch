@@ -1,0 +1,70 @@
+From f21f32a0ed9fa5a023e9ed8c7420116e56d823ed Mon Sep 17 00:00:00 2001
+From: Ihor Solodrai <ihor.solodrai@linux.dev>
+Date: Tue, 29 Sep 2026 18:05:10 -0700
+Subject: [PATCH bpf-next v1] selftests/bpf: Skip callx switch table test for
+ clang-22 with cpu=v4
+
+clang-22 miscompiles call_by_switch() when targeting -mcpu=v4: it turns
+the switch into an array of pointers to functions and then erroneously
+removes the array in BPFAsmPrinter::doFinalization(), breaking the build
+with:
+
+  error: Undefined temporary symbol .Lswitch.table.call_by_switch
+
+Fixed by llvm commit 9fc458a1d95b ("[BPF] Fix erroneous removal of
+non-jump-table globals"), first released in clang-23; older clangs are
+fine. test_progs-cpuv4 is built by default whenever clang supports v4,
+so selftests/bpf fails to build with any clang-22 release. Guard just
+this test with the compiler/cpu check and leave a __skip placeholder
+for the broken combination, so the gap is reported as SKIP instead of
+silently missing.
+
+Fixes: b018e998e645 ("selftests/bpf: Add tests for callx through pointers in read-only data")
+Signed-off-by: Ihor Solodrai <ihor.solodrai@linux.dev>
+---
+ .../bpf/progs/verifier_callx_rodata.c         | 20 +++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/tools/testing/selftests/bpf/progs/verifier_callx_rodata.c b/tools/testing/selftests/bpf/progs/verifier_callx_rodata.c
+index db3169a1ddf6..3e7a1c2c2a9a 100644
+--- a/tools/testing/selftests/bpf/progs/verifier_callx_rodata.c
++++ b/tools/testing/selftests/bpf/progs/verifier_callx_rodata.c
+@@ -803,6 +803,14 @@ int callx_c_ops_selected(void *ctx)
+ 	return use_shape(ops, 3);
+ }
+ 
++/*
++ * clang-22 with -mcpu=v4 drops the lookup table it builds for this switch
++ * ("Undefined temporary symbol .Lswitch.table.call_by_switch").
++ * Fixed in clang-23 by llvm commit 9fc458a1d95b.
++ *
++ * https://github.com/llvm/llvm-project/commit/9fc458a1d95b
++ */
++#if __clang_major__ != 22 || __BPF_CPU_VERSION__ < 4
+ /* the compiler might turn the switch into a table that has no symbol */
+ static __noinline int call_by_switch(unsigned int idx, int x)
+ {
+@@ -847,6 +855,18 @@ int callx_c_switch_table(void *ctx)
+ 	return call_by_switch(op_idx - 8, 3);
+ }
+ 
++#else
++
++SEC("socket")
++__skip("clang-22 bug with -mcpu=v4, switch table test cannot be built")
++__success
++int callx_c_switch_table(void *ctx)
++{
++	return 0;
++}
++
++#endif
++
+ /*
+  * Misaligned pointers to functions are ignored, the rest of the data is
+  * accessible as before. The program doesn't have callx, so libbpf doesn't
+
+base-commit: cc6010e6e5cbe1f743d3011991041f227d976a5e
+-- 
+2.50.1
+
