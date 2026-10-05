@@ -1,4 +1,10 @@
-name: AI Code Review
+# AI shadow: production's ai-code-review.yml plus an experiment, run on a
+# sample of KPD's series PRs in kernel-patches/bpf-rc and on test PRs against
+# its ai-review-base branch. Reviews are posted to bpf-rc PRs only.
+#
+# Keep this file equal to ai-code-review.yml apart from the experiment:
+# port every change to ai-code-review.yml here too.
+name: AI Code Review (rc)
 
 permissions:
   contents: read
@@ -8,8 +14,14 @@ on:
   pull_request:
     types: [opened, review_requested]
 
+env:
+  # The experiment: the bpf-ai-review ref to review with.
+  AI_REVIEW_WRAPPER_REF: shadow/subsystem-build
+  # Review one in N KPD series.
+  AI_REVIEW_SAMPLE_EVERY: 4
+
 jobs:
-  get-commits:
+  get-commits-rc:
     # This codition is an indicator that we are running in a context of PR owned by kernel-patches org
     if: ${{ github.repository == 'kernel-patches/bpf-rc' && vars.AWS_REGION }}
     runs-on:
@@ -37,6 +49,17 @@ jobs:
       - name: Get PR commits
         id: get-commits
         run: |
+          # Review one in AI_REVIEW_SAMPLE_EVERY KPD series, by patchwork series
+          # ID. Test PRs against ai-review-base always run.
+          if [ "$GITHUB_BASE_REF" != ai-review-base ]; then
+            if ! [[ $GITHUB_HEAD_REF =~ ^series/([0-9]+)= ]] ||
+               (( BASH_REMATCH[1] % AI_REVIEW_SAMPLE_EVERY )); then
+              echo "::notice::$GITHUB_HEAD_REF is not sampled (1 in ${AI_REVIEW_SAMPLE_EVERY} series)"
+              echo "commits=[]" >> "$GITHUB_OUTPUT"
+              echo "has-commits=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
           cd .kernel
           if [ "$(git log -1 --format=%s ${{ github.event.pull_request.head.sha }})" = "Dummy commit" ]; then
             echo "::notice::KPD Dummy commit, the series did not apply: skipping AI review"
@@ -50,9 +73,9 @@ jobs:
           echo "commits=$(cat $tmp)" >> $GITHUB_OUTPUT
           echo "has-commits=$([ -s pr_commits.txt ] && echo true || echo false)" >> $GITHUB_OUTPUT
 
-  ai-review:
-    needs: get-commits
-    if: needs.get-commits.outputs.has-commits == 'true'
+  ai-review-rc:
+    needs: get-commits-rc
+    if: needs.get-commits-rc.outputs.has-commits == 'true'
     timeout-minutes: 120
     runs-on:
       - ${{ format('codebuild-bpf-ci-{0}-{1}', github.run_id, github.run_attempt) }}
@@ -60,7 +83,7 @@ jobs:
       - instance-size:large
     strategy:
       matrix:
-        commit: ${{ fromJson(needs.get-commits.outputs.commits) }}
+        commit: ${{ fromJson(needs.get-commits-rc.outputs.commits) }}
       fail-fast: false
     env:
       AWS_REGION: us-west-2
@@ -107,6 +130,27 @@ jobs:
           cd ..
           rmdir .kernel
 
+      - name: Find production's review
+        id: prod-review
+        if: startsWith(github.head_ref, 'series/')
+        continue-on-error: true
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner: 'kernel-patches',
+              repo: 'bpf',
+              workflow_id: 'ai-code-review.yml',
+              branch: context.payload.pull_request.head.ref,
+              event: 'pull_request',
+              per_page: 100,
+            });
+            const runs = data.workflow_runs.sort((a, b) => a.created_at.localeCompare(b.created_at));
+            if (runs.length) {
+              core.setOutput('created_at', runs[0].created_at);
+              core.setOutput('url', runs[0].html_url);
+            }
+
       - name: semcode-index
         timeout-minutes: 30
         shell: bash
@@ -115,12 +159,40 @@ jobs:
           # image, and gitoxide needs a committer to update the reflog.
           GIT_COMMITTER_NAME: semcode-index
           GIT_COMMITTER_EMAIL: semcode-index@localhost
+          PROD_REVIEW_OUTCOME: ${{ steps.prod-review.outcome }}
+          PROD_REVIEW_AT: ${{ steps.prod-review.outputs.created_at }}
+          PROD_REVIEW_URL: ${{ steps.prod-review.outputs.url }}
         run: |
           git fetch --no-tags https://github.com/kernel-patches/bpf.git bpf-next
           git checkout ${{ matrix.commit }} -b patch-series.local
           MERGE_BASE=$(git merge-base FETCH_HEAD HEAD)
           ln -s /ci/.semcode.db ${{ github.workspace }}/.semcode.db
           semcode-index --git "${MERGE_BASE}..HEAD"
+          # Index lore only up to the start of production's review of the
+          # same series, so that the shadow review sees neither production's
+          # review mail nor the replies after it. semcode indexes each lore
+          # clone from origin/master after fetching origin: fetch here, move
+          # both master refs back to the cutoff, and make the clone its own
+          # origin.
+          if [ "$PROD_REVIEW_OUTCOME" = failure ]; then
+            echo "::warning::Looking up production's review failed: lore not cut"
+          elif [ -z "$PROD_REVIEW_AT" ]; then
+            echo "::notice::No production review of $GITHUB_HEAD_REF: lore not cut"
+          else
+            echo "Production review: $PROD_REVIEW_URL; lore cut at $PROD_REVIEW_AT"
+            for lore in .semcode.db/lore/bpf/*/; do
+              baked=$(git -C "$lore" log -1 --format=%ct refs/remotes/origin/master)
+              git -C "$lore" fetch -q origin
+              cut=$(git -C "$lore" rev-list -1 --before="$PROD_REVIEW_AT" refs/remotes/origin/master)
+              git -C "$lore" update-ref refs/heads/master "$cut"
+              git -C "$lore" update-ref refs/remotes/origin/master "$cut"
+              git -C "$lore" remote set-url origin "$(realpath "$lore")"
+              if [ "$baked" -gt "$(date -d "$PROD_REVIEW_AT" +%s)" ]; then
+                echo "::warning::$lore in the image is newer than $PROD_REVIEW_AT:" \
+                  "later mail is already indexed"
+              fi
+            done
+          fi
           semcode-index --lore bpf
 
       - name: Get patch subject
@@ -135,7 +207,7 @@ jobs:
         with:
           repository: 'kernel-patches/bpf-ai-review'
           path: 'bpf-ai-review'
-          ref: main
+          ref: ${{ env.AI_REVIEW_WRAPPER_REF }}
           submodules: true
 
       - name: Set up AI review
@@ -253,6 +325,13 @@ jobs:
           script: |
             const commentScript = require('./ci/claude/post-pr-comment.js');
             await commentScript({github, context});
+            const name = process.env.AI_REVIEW_WRAPPER_REF.replace(/^shadow\//, '');
+            await github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: [`ai-review-shadow:${name}`],
+            });
 
       - name: Fail CI job if review file exists
         if: steps.check_review.outputs.review_file != ''
