@@ -266,3 +266,30 @@ jobs:
           git diff --quiet ${{ matrix.commit }}^ ${{ matrix.commit }} && exit 0
           echo "::error::review-metadata.json not found: the review did not complete"
           exit 43
+
+      - name: Collect Claude Code session files
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Artifacts aren't masked like the job log: drop the credentials that
+          # Claude Code had in its environment.
+          dir="$RUNNER_TEMP/claude-sessions"
+          mkdir -p "$dir"
+          cp -r ~/.claude/projects/. "$dir/" || true
+          for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN GH_TOKEN; do
+            if [ -n "${!var:-}" ]; then
+              grep -rlF -e "${!var}" "$dir" | xargs -r perl -pi -e "s/\Q\$ENV{$var}\E/***/g" || true
+            fi
+          done
+
+      - name: Upload Claude Code session files
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: claude-sessions-${{ matrix.commit }}
+          path: ${{ runner.temp }}/claude-sessions
+          if-no-files-found: ignore
