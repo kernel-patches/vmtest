@@ -16,6 +16,9 @@ concurrency:
 
 jobs:
   set-matrix:
+    # kernel-patches/bpf-rc uses github-hosted runners,
+    # which currently can't run BPF CI workflows directly
+    if: ${{ github.repository != 'kernel-patches/bpf-rc' }}
     runs-on: ubuntu-slim
     permissions: read-all
     outputs:
