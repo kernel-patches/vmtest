@@ -268,7 +268,7 @@ jobs:
             --mcp-config ci/claude/mcp.json
             --model global.anthropic.claude-opus-5-5
             --effort xhigh
-          allowed_bots: "kernel-patches-daemon-bpf,kernel-patches-review-bot"
+          allowed_bots: "kernel-patches-daemon-bpf,kernel-patches-daemon-bpf-rc,kernel-patches-review-bot"
           prompt: ${{ steps.setup-ai-review.outputs.prompt }}
 
       # If Claude produced review-inline.txt then it found something
