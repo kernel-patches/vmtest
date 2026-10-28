@@ -45,7 +45,7 @@ jobs:
             exit 0
           fi
           tmp=$(mktemp)
-          git rev-list --max-count=50 ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} > pr_commits.txt
+          git rev-list --max-count=100 ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} > pr_commits.txt
           cat pr_commits.txt | jq -R -s -c 'split("\n")[:-1]' > $tmp
           echo "commits=$(cat $tmp)" >> $GITHUB_OUTPUT
           echo "has-commits=$([ -s pr_commits.txt ] && echo true || echo false)" >> $GITHUB_OUTPUT
