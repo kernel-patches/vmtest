@@ -39,7 +39,7 @@ runs:
     - if: ${{ github.event_name == 'push' }}
       shell: bash
       run: |
-        mv "${{ github.workspace }}/${{ inputs.veristat_output }}" \
+        cp "${{ github.workspace }}/${{ inputs.veristat_output }}" \
            "${{ github.workspace }}/${{ inputs.baseline_name }}"
 
     - if: ${{ github.event_name == 'push' }}
