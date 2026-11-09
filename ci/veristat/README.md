@@ -74,6 +74,23 @@ python3 create_manifest.py --config selection.json --output manifest.json
 `filter` is optional. A selection matching no files remains in the manifest,
 so the runner reports it as an error. Downloads and builds belong to the caller.
 
+## Run with run-vmtest
+
+`run-veristat.sh` is a guest entrypoint for `libbpf/ci/run-vmtest`. Select it
+through `VMTEST_SCRIPT` and pass the runner arguments in the environment:
+
+```sh
+VMTEST_SCRIPT=$PWD/ci/veristat/run-veristat.sh
+VERISTAT_BINARY=$PWD/selftests/bpf/veristat
+VERISTAT_MANIFEST=$PWD/manifest.json
+VERISTAT_RESULTS=$PWD/veristat-results
+```
+
+The guest uses the host root filesystem and environment, so host paths work
+unchanged. The entrypoint records `veristat:<exitcode>` in the run-vmtest
+status file; the host fails the action on a nonzero status. Per-corpus outcomes
+remain in the result status files.
+
 ## BPF CI inputs
 
 Selection configs for `create_manifest.py`:
