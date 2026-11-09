@@ -63,3 +63,5 @@ jobs:
       - name: Run unittests
         run: python3 -m unittest scripts/tests/*.py
         working-directory: .github
+      - name: Run veristat unittests
+        run: python3 -m unittest ci/veristat/tests/*.py
