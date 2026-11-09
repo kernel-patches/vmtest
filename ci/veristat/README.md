@@ -49,3 +49,47 @@ Diagnostics go to stderr: run inputs, corpus progress, and completion or failure
 details. Messages are flushed so an interrupted run retains its last operation.
 Tool output stays in files. The caller controls visibility of the result files
 and VM console.
+
+## Prepare a manifest
+
+`create_manifest.py` selects local files by glob and records their checksums.
+Its config lists one selection per corpus; directories and filters are relative
+to the current directory:
+
+```json
+[
+  {
+    "name": "kernel",
+    "directory": "selftests/bpf",
+    "pattern": "*.bpf.o",
+    "filter": "selftests/bpf/veristat.cfg"
+  }
+]
+```
+
+```sh
+python3 create_manifest.py --config selection.json --output manifest.json
+```
+
+`filter` is optional. A selection matching no files remains in the manifest,
+so the runner reports it as an error. Downloads and builds belong to the caller.
+
+## BPF CI inputs
+
+Selection configs for `create_manifest.py`:
+
+| File | Corpora |
+|---|---|
+| `oss.json` | Kernel, Cilium, SCX |
+| `meta.json` | Meta |
+
+After downloading/building the selected inputs, the workflows generate
+`manifest.json` from the workspace root:
+
+```sh
+python3 ci/veristat/create_manifest.py --config ci/veristat/oss.json \
+    --output manifest.json
+```
+
+Each caller controls publication: OSS can share its debug bundle; Meta objects
+and raw logs must remain private.
