@@ -30,7 +30,7 @@ runs:
     - if: ${{ github.event_name == 'pull_request' }}
       name: Show veristat comparison
       shell: bash
-      run: ./.github/scripts/compare-veristat-results.sh
+      run: ./ci/veristat/compare-veristat-results.sh
       env:
         BASELINE_PATH: ${{ github.workspace }}/${{ inputs.baseline_name }}
         VERISTAT_OUTPUT: ${{ inputs.veristat_output }}

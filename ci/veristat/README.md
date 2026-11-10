@@ -4,9 +4,10 @@
 It requires Python 3 and a veristat executable. The caller prepares the objects,
 boots the kernel, and handles baselines and publication.
 
-The scripts and their tests do not depend on BPF CI corpora, workflows, or
-result policy, so they can move into a shared action if another project needs
-them.
+The runner, manifest helper, guest entrypoint, and their tests do not depend
+on BPF CI corpora, workflows, or result policy, so they can move into a shared
+action if another project needs them. BPF CI inputs and baseline comparison
+are described [below](#bpf-ci).
 
 ```sh
 python3 run_veristat.py --veristat /tools/veristat \
@@ -91,7 +92,7 @@ unchanged. The entrypoint records `veristat:<exitcode>` in the run-vmtest
 status file; the host fails the action on a nonzero status. Per-corpus outcomes
 remain in the result status files.
 
-## BPF CI inputs
+## BPF CI
 
 Selection configs for `create_manifest.py`:
 
@@ -107,6 +108,10 @@ After downloading/building the selected inputs, the workflows generate
 python3 ci/veristat/create_manifest.py --config ci/veristat/oss.json \
     --output manifest.json
 ```
+
+`compare-veristat-results.sh` compares a corpus CSV with its cached baseline
+and fails only when a program that passed in the baseline now fails. Without a
+baseline, it prints the results and passes.
 
 Each caller controls publication: OSS can share its debug bundle; Meta objects
 and raw logs must remain private.
