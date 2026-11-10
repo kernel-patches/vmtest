@@ -43,6 +43,7 @@ def validate_results(path):
     with path.open(newline="") as stream:
         rows = csv.reader(stream)
         programs = 0
+        rejected = []
         try:
             if next(rows, None) != CSV_FIELDS:
                 raise ValueError("unexpected veristat CSV header")
@@ -57,12 +58,28 @@ def validate_results(path):
                         int(states)
                     except ValueError:
                         raise ValueError("invalid total_states value") from None
+                if verdict == "failure":
+                    rejected.append((filename, program))
                 programs += 1
             if not programs:
                 raise ValueError("veristat produced no program results")
         except (ValueError, csv.Error) as error:
             raise ValueError(f"{path}:{max(rows.line_num, 1)}: {error}") from None
-    return programs
+    return programs, rejected
+
+
+def record_rejected(veristat, paths, rejected, directory):
+    config = directory / "failures.cfg"
+    config.write_text("".join(f"{file}/{program}\n" for file, program in rejected))
+    files = {file for file, _ in rejected}
+    objects = [path for path in paths if Path(path).name in files]
+    with (directory / "failures.log").open("w") as output:
+        result = subprocess.run(
+            [str(veristat), "-v", f"-f@{config}"] + objects,
+            stdout=output,
+            stderr=subprocess.STDOUT,
+        )
+    return result.returncode
 
 
 def measure(veristat, manifest_path, output):
@@ -84,6 +101,7 @@ def measure(veristat, manifest_path, output):
         directory.mkdir()
         status = {"state": "running"}
         write_status(directory, status)
+        rejected = []
         try:
             objects = corpus["objects"]
             config = (
@@ -127,7 +145,7 @@ def measure(veristat, manifest_path, output):
                     f"veristat exited with status {result.returncode}; "
                     f"stderr={directory / 'stderr.log'}"
                 )
-            programs = validate_results(directory / "results.csv")
+            programs, rejected = validate_results(directory / "results.csv")
             status["state"] = "measured"
             message = f"{name}: measured {programs} programs"
         except (OSError, ValueError, csv.Error) as error:
@@ -136,6 +154,16 @@ def measure(veristat, manifest_path, output):
         write_status(directory, status)
         log(message)
         statuses[name] = status
+        # Diagnostics only: keep verbose logs from the measured kernel and objects.
+        if rejected:
+            try:
+                returncode = record_rejected(veristat, paths, rejected, directory)
+                log(
+                    f"{name}: recorded verifier logs of {len(rejected)} rejected "
+                    f"programs in {directory / 'failures.log'}; exit status {returncode}"
+                )
+            except OSError as error:
+                log(f"{name}: could not record verifier logs: {error}")
     return statuses
 
 
