@@ -129,17 +129,17 @@ jobs:
       toolchain_full: ${{ inputs.toolchain_full }}
       download_sources: ${{ inputs.download_sources }}
 
-  veristat-kernel:
+  veristat-oss:
     if: ${{ inputs.run_veristat }}
-    uses: ./.github/workflows/veristat-kernel.yml
+    uses: ./.github/workflows/veristat-oss.yml
     needs: [build]
     permissions:
-      id-token: write
       contents: read
     with:
       arch: ${{ inputs.arch }}
       toolchain_full: ${{ inputs.toolchain_full }}
       runs_on: ${{ inputs.runs_on }}
+      llvm_version: ${{ inputs.llvm_version }}
 
   veristat-meta:
     # Check for vars.AWS_REGION is necessary to skip this job in case of a PR from a fork.
@@ -156,31 +156,6 @@ jobs:
       runs_on: ${{ inputs.runs_on }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
-
-  veristat-scx:
-    if: ${{ inputs.run_veristat }}
-    uses: ./.github/workflows/veristat-scx.yml
-    needs: [build]
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      arch: ${{ inputs.arch }}
-      toolchain_full: ${{ inputs.toolchain_full }}
-      runs_on: ${{ inputs.runs_on }}
-      llvm_version: ${{ inputs.llvm_version }}
-
-  veristat-cilium:
-    if: ${{ inputs.run_veristat }}
-    uses: ./.github/workflows/veristat-cilium.yml
-    needs: [build]
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      arch: ${{ inputs.arch }}
-      toolchain_full: ${{ inputs.toolchain_full }}
-      runs_on: ${{ inputs.runs_on }}
 
   gcc-bpf:
     name: 'GCC BPF'
