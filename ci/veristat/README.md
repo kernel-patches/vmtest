@@ -42,6 +42,11 @@ Rejected programs remain CSV data for the caller's comparison policy.
 The runner continues after a corpus error and returns nonzero if any corpus
 could not be measured. The VM launcher handles VM failure and timeouts.
 
+After measuring a corpus with rejected programs, the runner reruns veristat
+with `-v` for them on the same objects and kernel. Their verifier logs go to
+`failures.log`, and the program filter to `failures.cfg`. These are diagnostics;
+they do not change the measurement status.
+
 Status includes the corpus digest: SHA256 of the sorted SHA256SUMS-style
 `<sha256>  <basename>\n` listing. Source/build details and directory locations
 do not participate in object identity.
@@ -115,4 +120,5 @@ program that passed in the baseline now fails. Without a baseline, it prints
 the results and passes.
 
 Each caller controls publication: OSS can share its debug bundle; Meta objects
-and raw logs must remain private.
+and raw logs must remain private. The OSS workflow uploads the whole results
+directory, including verifier logs; the Meta workflow uploads only the CSV.
