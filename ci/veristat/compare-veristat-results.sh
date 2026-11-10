@@ -48,7 +48,7 @@ $veristat \
     --emit file,prog,verdict,states \
     --compare "${BASELINE_PATH}" "${VERISTAT_OUTPUT}" > $cmp_out
 
-python3 ./.github/scripts/veristat_compare.py $cmp_out
+python3 ./ci/veristat/veristat_compare.py $cmp_out
 exit_code=$?
 
 # print verifier log for progs that failed to load
