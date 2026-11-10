@@ -110,8 +110,9 @@ python3 ci/veristat/create_manifest.py --config ci/veristat/oss.json \
 ```
 
 `compare-veristat-results.sh` compares a corpus CSV with its cached baseline
-and fails only when a program that passed in the baseline now fails. Without a
-baseline, it prints the results and passes.
+through `veristat --compare` and `veristat_compare.py`. It fails only when a
+program that passed in the baseline now fails. Without a baseline, it prints
+the results and passes.
 
 Each caller controls publication: OSS can share its debug bundle; Meta objects
 and raw logs must remain private.

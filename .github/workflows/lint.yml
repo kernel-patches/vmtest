@@ -31,8 +31,6 @@ jobs:
         uses: actions/checkout@v6
       - name: Run black
         uses: psf/black@stable
-        with:
-          src: ./.github/scripts
 
   validate_matrix:
     if: ${{ github.repository == 'kernel-patches/vmtest' }}
@@ -61,7 +59,4 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Run unittests
-        run: python3 -m unittest scripts/tests/*.py
-        working-directory: .github
-      - name: Run veristat unittests
         run: python3 -m unittest ci/veristat/tests/*.py
