@@ -1,4 +1,4 @@
-From a0a0c785cbcaa72bb03c205eb61e5b0960b80ac2 Mon Sep 17 00:00:00 2001
+From ecae70d0cb87eeafd0d616dd954afe25b21ad04a Mon Sep 17 00:00:00 2001
 From: Alexei Starovoitov <ast@kernel.org>
 Date: Sun, 8 Nov 2026 16:37:10 +0000
 Subject: [PATCH] selftests/bpf: Don't include <linux/ptrace.h> in BPF progs
@@ -30,16 +30,17 @@ to a forward declaration. It takes the type from vmlinux.h.
 
 Signed-off-by: Alexei Starovoitov <ast@kernel.org>
 Link: https://patch.msgid.link/20261108163710.1881321-1-alexei.starovoitov@gmail.com
+[ Ihor: drop the plain_c_strobemeta_bpf_loop.c hunk of upstream commit
+  a0a0c785cbca, the file doesn't exist in bpf ]
 ---
- tools/testing/selftests/bpf/progs/freplace_attach_probe.c      | 3 +--
- .../testing/selftests/bpf/progs/plain_c_strobemeta_bpf_loop.c  | 1 -
- tools/testing/selftests/bpf/progs/pyperf.h                     | 1 -
- tools/testing/selftests/bpf/progs/strobemeta.h                 | 1 -
- tools/testing/selftests/bpf/progs/test_core_extern.c           | 1 -
- tools/testing/selftests/bpf/progs/test_perf_branches.c         | 1 -
- tools/testing/selftests/bpf/progs/test_perf_buffer.c           | 1 -
- tools/testing/selftests/bpf/progs/test_rdonly_maps.c           | 1 -
- 8 files changed, 1 insertion(+), 9 deletions(-)
+ tools/testing/selftests/bpf/progs/freplace_attach_probe.c | 3 +--
+ tools/testing/selftests/bpf/progs/pyperf.h                | 1 -
+ tools/testing/selftests/bpf/progs/strobemeta.h            | 1 -
+ tools/testing/selftests/bpf/progs/test_core_extern.c      | 1 -
+ tools/testing/selftests/bpf/progs/test_perf_branches.c    | 1 -
+ tools/testing/selftests/bpf/progs/test_perf_buffer.c      | 1 -
+ tools/testing/selftests/bpf/progs/test_rdonly_maps.c      | 1 -
+ 7 files changed, 1 insertion(+), 8 deletions(-)
 
 diff --git a/tools/testing/selftests/bpf/progs/freplace_attach_probe.c b/tools/testing/selftests/bpf/progs/freplace_attach_probe.c
 index 370a0e1922e0..c0eb2980851c 100644
@@ -55,20 +56,8 @@ index 370a0e1922e0..c0eb2980851c 100644
  #include <bpf/bpf_helpers.h>
  #include <bpf/bpf_tracing.h>
  
-diff --git a/tools/testing/selftests/bpf/progs/plain_c_strobemeta_bpf_loop.c b/tools/testing/selftests/bpf/progs/plain_c_strobemeta_bpf_loop.c
-index b4f53c42e098..d2411a41f3cf 100644
---- a/tools/testing/selftests/bpf/progs/plain_c_strobemeta_bpf_loop.c
-+++ b/tools/testing/selftests/bpf/progs/plain_c_strobemeta_bpf_loop.c
-@@ -12,7 +12,6 @@
- #include <stddef.h>
- #include <stdbool.h>
- #include <linux/bpf.h>
--#include <linux/ptrace.h>
- #include <linux/sched.h>
- #include <linux/types.h>
- #include <bpf/bpf_helpers.h>
 diff --git a/tools/testing/selftests/bpf/progs/pyperf.h b/tools/testing/selftests/bpf/progs/pyperf.h
-index 5f093bcf6b58..bfc13cbe70f4 100644
+index fd93a96e5901..47ff2e5fc9c9 100644
 --- a/tools/testing/selftests/bpf/progs/pyperf.h
 +++ b/tools/testing/selftests/bpf/progs/pyperf.h
 @@ -1,7 +1,6 @@
@@ -80,7 +69,7 @@ index 5f093bcf6b58..bfc13cbe70f4 100644
  #include <stddef.h>
  #include <stdbool.h>
 diff --git a/tools/testing/selftests/bpf/progs/strobemeta.h b/tools/testing/selftests/bpf/progs/strobemeta.h
-index 626a0abacc69..70f2dd03eb60 100644
+index 6e1918deaf26..98cade44272e 100644
 --- a/tools/testing/selftests/bpf/progs/strobemeta.h
 +++ b/tools/testing/selftests/bpf/progs/strobemeta.h
 @@ -5,7 +5,6 @@
