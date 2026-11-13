@@ -14,5 +14,10 @@
     "name": "scx",
     "directory": "scx-build-output/bpf",
     "pattern": "*.bpf.o"
+  },
+  {
+    "name": "wprof",
+    "directory": "wprof-build-output/bpf",
+    "pattern": "*.bpf.o"
   }
 ]

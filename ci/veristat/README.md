@@ -104,7 +104,7 @@ Selection configs for `create_manifest.py`:
 
 | File | Corpora |
 |---|---|
-| `oss.json` | Kernel, Cilium, SCX |
+| `oss.json` | Kernel, Cilium, SCX, wprof |
 | `meta.json` | Meta |
 
 After downloading/building the selected inputs, the workflows generate
@@ -114,6 +114,10 @@ After downloading/building the selected inputs, the workflows generate
 python3 ci/veristat/create_manifest.py --config ci/veristat/oss.json \
     --output manifest.json
 ```
+
+`build-wprof.sh <checkout> <output>` builds wprof's BPF targets and copies
+the linked `wprof-final.bpf.o` and `wprof_query.bpf.o` into the corpus directory.
+The Rust application and symbolization libraries are not needed.
 
 `veristat_compare.py` reports all configured sources in one overview and pools
 changed programs into one table with source labels. Failed/interrupted sources
