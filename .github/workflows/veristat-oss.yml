@@ -68,6 +68,19 @@ jobs:
         with:
           output-dir: ${{ env.SCX_BUILD_OUTPUT }}
 
+      - name: Checkout wprof
+        uses: actions/checkout@v6
+        with:
+          repository: anakryiko/wprof
+          path: wprof
+          submodules: recursive
+
+      # The SCX action installs the compiler and libraries these builds require.
+      - name: Build wprof BPF programs
+        env:
+          CLANG: clang-${{ inputs.llvm_version }}
+        run: ./ci/veristat/build-wprof.sh wprof wprof-build-output/bpf
+
       - name: Prepare veristat manifest
         run: python3 ci/veristat/create_manifest.py --config ci/veristat/oss.json --output manifest.json
 
