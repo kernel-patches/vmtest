@@ -81,6 +81,18 @@ jobs:
           CLANG: clang-${{ inputs.llvm_version }}
         run: ./ci/veristat/build-wprof.sh wprof wprof-build-output/bpf
 
+      - name: Checkout retsnoop
+        uses: actions/checkout@v6
+        with:
+          repository: anakryiko/retsnoop
+          path: retsnoop
+          submodules: recursive
+
+      - name: Build retsnoop BPF programs
+        env:
+          CLANG: clang-${{ inputs.llvm_version }}
+        run: ./ci/veristat/build-retsnoop.sh retsnoop retsnoop-build-output/bpf
+
       - name: Prepare veristat manifest
         run: python3 ci/veristat/create_manifest.py --config ci/veristat/oss.json --output manifest.json
 
