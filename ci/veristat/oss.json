@@ -19,5 +19,10 @@
     "name": "wprof",
     "directory": "wprof-build-output/bpf",
     "pattern": "*.bpf.o"
+  },
+  {
+    "name": "retsnoop",
+    "directory": "retsnoop-build-output/bpf",
+    "pattern": "*.bpf.o"
   }
 ]

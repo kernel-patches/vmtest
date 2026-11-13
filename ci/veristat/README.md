@@ -104,7 +104,7 @@ Selection configs for `create_manifest.py`:
 
 | File | Corpora |
 |---|---|
-| `oss.json` | Kernel, Cilium, SCX, wprof |
+| `oss.json` | Kernel, Cilium, SCX, wprof, retsnoop |
 | `meta.json` | Meta |
 
 After downloading/building the selected inputs, the workflows generate
@@ -118,6 +118,10 @@ python3 ci/veristat/create_manifest.py --config ci/veristat/oss.json \
 `build-wprof.sh <checkout> <output>` builds wprof's BPF targets and copies
 the linked `wprof-final.bpf.o` and `wprof_query.bpf.o` into the corpus directory.
 The Rust application and symbolization libraries are not needed.
+
+`build-retsnoop.sh <checkout> <output>` builds the linked tracing,
+calibration and kernel-memory-reader objects. It copies them under `.bpf.o`
+names for corpus selection, leaving intermediate objects out.
 
 `veristat_compare.py` reports all configured sources in one overview and pools
 changed programs into one table with source labels. Failed/interrupted sources
