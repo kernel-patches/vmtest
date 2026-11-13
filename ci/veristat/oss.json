@@ -24,5 +24,10 @@
     "name": "retsnoop",
     "directory": "retsnoop-build-output/bpf",
     "pattern": "*.bpf.o"
+  },
+  {
+    "name": "blazesym",
+    "directory": "blazesym-build-output/bpf",
+    "pattern": "*.bpf.o"
   }
 ]

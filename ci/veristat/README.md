@@ -104,7 +104,7 @@ Selection configs for `create_manifest.py`:
 
 | File | Corpora |
 |---|---|
-| `oss.json` | Kernel, Cilium, SCX, wprof, retsnoop |
+| `oss.json` | Kernel, Cilium, SCX, wprof, retsnoop, blazesym |
 | `meta.json` | Meta |
 
 After downloading/building the selected inputs, the workflows generate
@@ -122,6 +122,10 @@ The Rust application and symbolization libraries are not needed.
 `build-retsnoop.sh <checkout> <output>` builds the linked tracing,
 calibration and kernel-memory-reader objects. It copies them under `.bpf.o`
 names for corpus selection, leaving intermediate objects out.
+
+`build-blazesym.sh <wprof-checkout> <output>` compiles blazesym's
+`getpid.bpf.o` test program. It uses the blazesym submodule checked out with
+wprof and the headers from its BPF build, in the x86_64 OSS lane.
 
 `veristat_compare.py` reports all configured sources in one overview and pools
 changed programs into one table with source labels. Failed/interrupted sources
