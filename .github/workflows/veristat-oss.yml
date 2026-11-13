@@ -93,6 +93,11 @@ jobs:
           CLANG: clang-${{ inputs.llvm_version }}
         run: ./ci/veristat/build-retsnoop.sh retsnoop retsnoop-build-output/bpf
 
+      - name: Build blazesym BPF test program
+        env:
+          CLANG: clang-${{ inputs.llvm_version }}
+        run: ./ci/veristat/build-blazesym.sh wprof blazesym-build-output/bpf
+
       - name: Prepare veristat manifest
         run: python3 ci/veristat/create_manifest.py --config ci/veristat/oss.json --output manifest.json
 
