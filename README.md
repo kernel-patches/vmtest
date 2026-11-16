@@ -1,22 +1,53 @@
-# BPF CI GitHub Actions worfklows
+# BPF CI workflows
 
-This repository contains GitHub Actions workflow definitions, scripts and configuration files used by those workflows.
+This repository contains GitHub Actions workflows, scripts and test policy for
+[Linux kernel BPF CI](https://github.com/kernel-patches/bpf/actions/workflows/test.yml).
+It orchestrates kernel builds, BPF/sched_ext selftests, bpftool checks and veristat
+comparisons. Kernel source and the reusable VM launcher live in other repositories.
 
-You can check the workflow runs on [kernel-patches/bpf actions page](https://github.com/kernel-patches/bpf/actions/workflows/test.yml). 
+Kernel Patches Daemon (KPD) copies these CI files into kernel mirrors such as
+`kernel-patches/bpf`, where patch-series PRs and base pushes execute them. PRs in
+this repository validate changes using a downloaded kernel tree. The workflow
+conditions and matrix determine which tests run in each context.
 
-**"BPF CI"** refers to a continuous integration testing system targeting [BPF subsystem of the Linux Kernel](https://ebpf.io/what-is-ebpf/).
+## Navigate the repository
 
-BPF CI consists of a number of components:
-- [kernel-patches/bpf](https://github.com/kernel-patches/bpf) - a copy of Linux Kernel source repository tracking [upstream bpf trees](https://web.git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/)
-- [Kernel Patches Daemon](https://github.com/kernel-patches/kernel-patches-daemon) instance - a service connecting [Patchwork](https://patchwork.kernel.org/project/netdevbpf/list/) with the GitHub repository
-- [kernel-patches/vmtest](https://github.com/kernel-patches/vmtest) (this repository) - GitHub Actions workflows
-- [libbpf/ci](https://github.com/libbpf/ci) - custom reusable GitHub Actions
-- [kernel-patches/runner](https://github.com/kernel-patches/runner) - self-hosted GitHub Actions runners
+| Path | Purpose |
+|---|---|
+| [.github/workflows](.github/workflows) | Entry points and reusable build/test/review workflows |
+| [.github/scripts](.github/scripts) | Matrix generation, runner placement and workflow helpers |
+| [ci/vmtest/configs](ci/vmtest/configs) | Kernel configs, selftest exclusions and kernel-splat policy |
+| [ci/veristat](ci/veristat/README.md) | Corpus preparation, measurement and baseline reporting |
+| [ci/diffs](ci/diffs) | Kernel patches applied before CI builds |
+| [ci/claude](ci/claude/README.md) | AI review and investigation tooling |
 
-Of course BPF CI also has important dependencies such as:
-- [selftests/bpf](https://web.git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/tree/tools/testing/selftests/bpf) - the main test suite of BPF CI
-- [selftests/sched_ext](https://web.git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/tree/tools/testing/selftests/sched_ext) - in-kernel sched_ext test suite
-- [veristat](https://web.git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/tree/tools/testing/selftests/bpf/veristat.c) - used to catch performance and BPF verification regressions on a suite of complex BPF programs
-- [vmtest](https://github.com/danobi/vmtest) - a QEMU wrapper, used to execute tests in a VM
-- [GCC BPF backend](https://gcc.gnu.org/wiki/BPFBackEnd)
-- Above-mentioned [Patchwork](https://patchwork.kernel.org/) instance, maintained by the Linux Foundation
+Agents should read [AGENTS.md](AGENTS.md) before editing.
+
+## Validate changes
+
+From the repository root, with Python 3 and Black installed:
+
+```bash
+python3 -m unittest ci/veristat/tests/*.py
+black --check .
+```
+
+Check changed shell scripts with Bash and the ShellCheck options in
+[lint.yml](.github/workflows/lint.yml), and validate workflow syntax and wiring.
+Changes to workflow execution, artifacts or baselines also need a GitHub Actions
+run; feature-branch pushes alone do not exercise all PR/base-push paths.
+
+## BPF CI components
+
+- [kernel-patches/bpf](https://github.com/kernel-patches/bpf): kernel mirror tracking
+  [upstream BPF trees](https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/).
+- [KPD](https://github.com/kernel-patches/kernel-patches-daemon): connects
+  [Patchwork](https://patchwork.kernel.org/project/netdevbpf/list/) with GitHub,
+  reports CI results and sends notifications.
+- [libbpf/ci](https://github.com/libbpf/ci): reusable build/test actions and VM setup.
+- [kernel-patches/runner](https://github.com/kernel-patches/runner): runner images and setup.
+- [danobi/vmtest](https://github.com/danobi/vmtest): QEMU-based VM launcher.
+
+The tested kernel supplies [BPF selftests and veristat](https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/tree/tools/testing/selftests/bpf)
+and [sched_ext selftests](https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/tree/tools/testing/selftests/sched_ext).
+The [GCC BPF backend](https://gcc.gnu.org/wiki/BPFBackEnd) is tested separately.
