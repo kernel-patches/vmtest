@@ -7,8 +7,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tempfile
 
 CSV_FIELDS = ["file_name", "prog_name", "verdict", "total_states"]
 
@@ -68,15 +70,19 @@ def validate_results(path):
     return programs, rejected
 
 
-def record_rejected(veristat, paths, rejected, directory):
-    config = directory / "failures.cfg"
-    config.write_text("".join(f"{file}/{program}\n" for file, program in rejected))
+def record_rejected(veristat, paths, rejected, output, name):
     files = {file for file, _ in rejected}
     objects = [path for path in paths if Path(path).name in files]
-    with (directory / "failures.log").open("w") as output:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".cfg") as config, (
+        output / "failures.log"
+    ).open("a") as log_file:
+        config.write("".join(f"{file}/{program}\n" for file, program in rejected))
+        config.flush()
+        log_file.write(f"\n# {name}\n")
+        log_file.flush()
         result = subprocess.run(
-            [str(veristat), "-v", f"-f@{config}"] + objects,
-            stdout=output,
+            [str(veristat), "-v", f"-f@{config.name}"] + objects,
+            stdout=log_file,
             stderr=subprocess.STDOUT,
         )
     return result.returncode
@@ -94,13 +100,16 @@ def measure(veristat, manifest_path, output):
     if manifest["version"] != 1 or not manifest["corpora"]:
         raise ValueError("expected a version 1 manifest with at least one corpus")
     output.mkdir(parents=True)
+    (output / "stderr.log").touch()
     statuses = {}
     for corpus in manifest["corpora"]:
         name = corpus["name"]
-        directory = output / name
-        directory.mkdir()
+        if name in statuses:
+            raise ValueError(f"duplicate corpus name: {name}")
+        csv_path = output / f"{name}.csv"
         status = {"state": "running"}
-        write_status(directory, status)
+        statuses[name] = status
+        write_status(output, statuses)
         rejected = []
         try:
             objects = corpus["objects"]
@@ -132,35 +141,37 @@ def measure(veristat, manifest_path, output):
             ]
             if config:
                 command.append(f"-f@{config}")
-            with (directory / "results.csv").open("w") as stdout, (
-                directory / "stderr.log"
-            ).open("w") as stderr:
+            with csv_path.open("w") as stdout, tempfile.TemporaryFile() as stderr:
                 log(
                     f"{name}: running veristat; corpus_sha256={status['corpus_sha256']}"
                 )
                 result = subprocess.run(command + paths, stdout=stdout, stderr=stderr)
+                if stderr.tell():
+                    stderr.seek(0)
+                    with (output / "stderr.log").open("ab") as log_file:
+                        log_file.write(f"\n# {name}\n".encode())
+                        shutil.copyfileobj(stderr, log_file)
             status["returncode"] = result.returncode
             if result.returncode:
                 raise ValueError(
                     f"veristat exited with status {result.returncode}; "
-                    f"stderr={directory / 'stderr.log'}"
+                    f"stderr={output / 'stderr.log'}"
                 )
-            programs, rejected = validate_results(directory / "results.csv")
+            programs, rejected = validate_results(csv_path)
             status["state"] = "measured"
             message = f"{name}: measured {programs} programs"
         except (OSError, ValueError, csv.Error) as error:
             status.update(state="error", error=str(error))
             message = f"{name}: error: {error}"
-        write_status(directory, status)
+        write_status(output, statuses)
         log(message)
-        statuses[name] = status
         # Diagnostics only: keep verbose logs from the measured kernel and objects.
         if rejected:
             try:
-                returncode = record_rejected(veristat, paths, rejected, directory)
+                returncode = record_rejected(veristat, paths, rejected, output, name)
                 log(
                     f"{name}: recorded verifier logs of {len(rejected)} rejected "
-                    f"programs in {directory / 'failures.log'}; exit status {returncode}"
+                    f"programs in {output / 'failures.log'}; exit status {returncode}"
                 )
             except OSError as error:
                 log(f"{name}: could not record verifier logs: {error}")

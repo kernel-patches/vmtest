@@ -33,8 +33,9 @@ names and object basenames must be unique within each corpus.
 
 The output directory must be new. The runner checks object SHA256s and runs
 one veristat process per corpus with `-o csv -q -e file,prog,verdict,states`.
-Each corpus gets `results.csv`, `stderr.log`, and an atomic `status.json`.
-Status is `running`, `measured`, or `error`; a missing status means the corpus
+Each corpus gets `<name>.csv`. Shared `stderr.log` and `failures.log` label their
+contents by corpus. One atomic `status.json` records each corpus's receipt.
+Status is `running`, `measured`, or `error`; a missing receipt means the corpus
 was not started. Interrupted and partial results must not be cached as measured.
 
 `measured` requires a zero tool exit status and nonempty, valid program records.
@@ -44,7 +45,7 @@ could not be measured. The VM launcher handles VM failure and timeouts.
 
 After measuring a corpus with rejected programs, the runner reruns veristat
 with `-v` for them on the same objects and kernel. Their verifier logs go to
-`failures.log`, and the program filter to `failures.cfg`. These are diagnostics;
+`failures.log`; the program filter is temporary. These are diagnostics;
 they do not change the measurement status.
 
 Status includes the corpus digest: SHA256 of the sorted SHA256SUMS-style
