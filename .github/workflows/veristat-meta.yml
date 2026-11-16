@@ -94,10 +94,11 @@ jobs:
           from pathlib import Path
 
           results = Path(os.environ["VERISTAT_RESULTS"])
+          status_file = results / "status.json"
+          statuses = json.loads(status_file.read_text()) if status_file.exists() else {}
           measured = [
-              status.parent.name
-              for status in sorted(results.glob("*/status.json"))
-              if json.loads(status.read_text())["state"] == "measured"
+              name for name, status in sorted(statuses.items())
+              if status["state"] == "measured"
           ]
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               output.write(f"measured={' '.join(measured)}\n")
@@ -109,7 +110,7 @@ jobs:
         with:
           name: veristat-meta-${{ env.ARCH_AND_TOOL }}
           if-no-files-found: warn
-          path: ${{ env.VERISTAT_RESULTS }}/*/results.csv
+          path: ${{ env.VERISTAT_RESULTS }}/meta.csv
 
       - name: Restore veristat baseline
         if: ${{ !cancelled() }}
@@ -129,7 +130,7 @@ jobs:
           for corpus in ${MEASURED}; do
             echo "# ${corpus} corpus" | tee -a "${GITHUB_STEP_SUMMARY}"
             BASELINE_PATH="${VERISTAT_BASELINE}/${corpus}.csv" \
-            VERISTAT_OUTPUT="${VERISTAT_RESULTS}/${corpus}/results.csv" \
+            VERISTAT_OUTPUT="${VERISTAT_RESULTS}/${corpus}.csv" \
               ./ci/veristat/compare-veristat-results.sh || status=1
             # A comparison table ends in </details> without a newline; a blank
             # line keeps the next corpus heading out of that HTML block.
@@ -144,7 +145,7 @@ jobs:
         run: |
           mkdir -p "${VERISTAT_BASELINE}"
           for corpus in ${MEASURED}; do
-            cp "${VERISTAT_RESULTS}/${corpus}/results.csv" "${VERISTAT_BASELINE}/${corpus}.csv"
+            cp "${VERISTAT_RESULTS}/${corpus}.csv" "${VERISTAT_BASELINE}/${corpus}.csv"
           done
 
       - name: Save veristat baseline

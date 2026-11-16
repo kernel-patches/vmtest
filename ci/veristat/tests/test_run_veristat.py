@@ -52,6 +52,12 @@ class RunnerTest(unittest.TestCase):
         (self.root / "object.bpf.o").write_bytes(b"changed")
         self.assertNotEqual(self.invoke(), 0)
 
+    def test_duplicate_corpus_does_not_pass(self):
+        self.manifest.write_text(
+            json.dumps({"version": 1, "corpora": [self.corpus, self.corpus]})
+        )
+        self.assertNotEqual(self.invoke(), 0)
+
     def test_completed_receipt_uses_object_basename(self):
         (self.root / "moved").mkdir()
         (self.root / "object.bpf.o").rename(self.root / "moved/object.bpf.o")
@@ -60,7 +66,7 @@ class RunnerTest(unittest.TestCase):
         }
         self.manifest.write_text(json.dumps({"version": 1, "corpora": [self.corpus]}))
         self.assertEqual(self.invoke(), 0)
-        status = json.loads((self.results / "test/status.json").read_text())
+        status = json.loads((self.results / "status.json").read_text())["test"]
         self.assertEqual(status["state"], "measured")
         self.assertEqual(
             status["corpus_sha256"],
