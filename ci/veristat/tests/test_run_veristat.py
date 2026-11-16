@@ -29,7 +29,11 @@ class RunnerTest(unittest.TestCase):
         )
 
     def tool_output(self, command, stdout, stderr, **kwargs):
-        stdout.write(self.csv)
+        if "-o" in command:
+            stdout.write(self.csv)
+            stderr.write(b"tool detail \xff\n")
+        else:
+            stdout.write("verifier detail\n")
         return subprocess.CompletedProcess(command, 0)
 
     def invoke(self):
@@ -57,6 +61,21 @@ class RunnerTest(unittest.TestCase):
             json.dumps({"version": 1, "corpora": [self.corpus, self.corpus]})
         )
         self.assertNotEqual(self.invoke(), 0)
+
+    def test_shared_diagnostics_retain_both_sources(self):
+        other = dict(self.corpus, name="other")
+        self.manifest.write_text(
+            json.dumps({"version": 1, "corpora": [self.corpus, other]})
+        )
+        self.assertEqual(self.invoke(), 0)
+        for filename, detail in (
+            ("stderr.log", b"tool detail \xff"),
+            ("failures.log", b"verifier detail"),
+        ):
+            content = (self.results / filename).read_bytes()
+            self.assertEqual(content.count(detail), 2)
+            self.assertIn(b"# test\n", content)
+            self.assertIn(b"# other\n", content)
 
     def test_completed_receipt_uses_object_basename(self):
         (self.root / "moved").mkdir()
