@@ -1,76 +1,32 @@
 #!/usr/bin/env python3
 
-# This script reads a CSV file produced by the following invocation:
-#
-#   veristat --emit file,prog,verdict,states \
-#            --output-format csv \
-#            --compare ...
-#
-# And produces a markdown summary for the file.
-# The summary is printed to standard output and appended to a file
-# pointed to by GITHUB_STEP_SUMMARY variable.
-#
-# Script exits with return code 1 if there are new failures in the
-# veristat results.
-#
-# For testing purposes invoke as follows:
-#
-#  GITHUB_STEP_SUMMARY=/dev/null python3 veristat-compare.py test.csv
-#
-# File format (columns):
-#  0. file_name
-#  1. prog_name
-#  2. verdict_base
-#  3. verdict_comp
-#  4. verdict_diff
-#  5. total_states_base
-#  6. total_states_comp
-#  7. total_states_diff
-#
-# Records sample:
-#  file-a,a,success,failure,MISMATCH,12,12,+0 (+0.00%)
-#  file-b,b,success,success,MATCH,67,67,+0 (+0.00%)
-#
-# For better readability suffixes '_OLD' and '_NEW'
-# are used instead of '_base' and '_comp' for variable
-# names etc.
+"""Report a batch of veristat results and compare its cached baselines."""
 
 import io
 import os
 import sys
 import re
 import csv
+import json
 import logging
 import argparse
 import enum
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Final
+from pathlib import Path
+import subprocess
+import tempfile
+from typing import Dict, Iterable, List, Final, Optional
 
 TRESHOLD_PCT: Final[int] = 0
 
-SUMMARY_HEADERS = ["File", "Program", "Verdict", "States Diff (%)"]
+SUMMARY_HEADERS = ["Source", "File", "Program", "Verdict", "States Diff (%)"]
+OVERVIEW_HEADERS = ["Source", "Programs", "Passed", "Failed", "Status"]
 
 # expected format: +0 (+0.00%) / -0 (-0.00%)
 TOTAL_STATES_DIFF_REGEX = (
     r"(?P<absolute_diff>[+-]\d+) \((?P<percentage_diff>[+-]\d+\.\d+)\%\)"
 )
 
-
-TEXT_SUMMARY_TEMPLATE: Final[str] = """
-# {title}
-
-{table}
-""".strip()
-
-HTML_SUMMARY_TEMPLATE: Final[str] = """
-# {title}
-
-<details>
-<summary>Click to expand</summary>
-
-{table}
-</details>
-""".strip()
 
 GITHUB_MARKUP_REPLACEMENTS: Final[Dict[str, str]] = {
     "->": "&rarr;",
@@ -110,28 +66,15 @@ class VeristatInfo:
     changes: bool
     new_failures: bool
 
-    def get_results_title(self) -> str:
-        if self.new_failures:
-            return "There are new veristat failures"
 
-        if self.changes:
-            return "There are changes in verification performance"
-
-        return "No changes in verification performance"
-
-    def get_results_summary(self, markup: bool = False) -> str:
-        title = self.get_results_title()
-        if not self.table:
-            return f"# {title}\n"
-
-        template = TEXT_SUMMARY_TEMPLATE
-        table = format_table(headers=SUMMARY_HEADERS, rows=self.table)
-
-        if markup:
-            template = HTML_SUMMARY_TEMPLATE
-            table = github_markup_decorate(table)
-
-        return template.format(title=title, table=table)
+@dataclass
+class SourceReport:
+    name: str
+    outcome: str
+    # A comparison error does not invalidate measured CSVs for baseline staging.
+    counts: Optional[List[str]] = None
+    comparison: Optional[VeristatInfo] = None
+    error: bool = False
 
 
 def get_state_diff(value: str) -> float:
@@ -230,29 +173,155 @@ def format_table(headers: List[str], rows: List[List[str]]) -> str:
         return out.getvalue()
 
 
-def main(compare_csv_filename: os.PathLike, output_filename: os.PathLike) -> None:
-    with open(compare_csv_filename, newline="", encoding="utf-8") as csv_file:
-        veristat_results = parse_table(csv_file)
+def render_report(overview, changes, compared, markup=False):
+    report = "# Veristat\n\n" + format_table(OVERVIEW_HEADERS, overview)
+    if changes:
+        table = format_table(SUMMARY_HEADERS, changes)
+        if markup:
+            report += (
+                "\n<details>\n<summary>Changed programs</summary>\n\n"
+                + github_markup_decorate(table)
+                + "\n</details>\n"
+            )
+        else:
+            report += "\n" + table
+    elif compared:
+        report += "\nNo verification changes among compared programs.\n"
+    return report + "\n"
 
-    sys.stdout.write(veristat_results.get_results_summary())
 
-    with open(output_filename, encoding="utf-8", mode="a") as file:
-        file.write(veristat_results.get_results_summary(markup=True))
+def compare_results(veristat, baseline, results):
+    with tempfile.TemporaryFile(mode="w+") as comparison:
+        subprocess.run(
+            [
+                str(veristat.absolute()),
+                "--output-format",
+                "csv",
+                "--emit",
+                "file,prog,verdict,states",
+                "--compare",
+                str(baseline),
+                str(results),
+            ],
+            stdout=comparison,
+            check=True,
+        )
+        comparison.seek(0)
+        return parse_table(comparison)
 
-    if veristat_results.new_failures:
-        return 1
 
-    return 0
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Print veristat comparison output as markdown step summary"
+def source_error(name, csv_path, error, counts=None):
+    print(
+        f"{name}: results/comparison error for {csv_path}: {type(error).__name__}: {error}",
+        file=sys.stderr,
     )
-    parser.add_argument("filename")
+    return SourceReport(name, "Error", counts, error=True)
+
+
+def summarize_source(name, status, results, baseline, veristat):
+    if status.get("state") != "measured":
+        outcome = {"running": "Interrupted", "error": "Measurement error"}.get(
+            status.get("state"), "Not run"
+        )
+        if status.get("error"):
+            print(
+                f"{name}: {status['error']}; see {results / 'status.json'}",
+                file=sys.stderr,
+            )
+        return SourceReport(name, outcome, error=True)
+
+    csv_path = results / f"{name}.csv"
+    try:
+        with csv_path.open(newline="") as file:
+            records = list(csv.DictReader(file))
+        if not records:
+            raise ValueError("no measured program records")
+        passed = sum(record["verdict"] == "success" for record in records)
+        counts = [str(len(records)), str(passed), str(len(records) - passed)]
+    except (OSError, ValueError, KeyError, csv.Error) as error:
+        return source_error(name, csv_path, error)
+
+    if baseline is None:
+        return SourceReport(name, "Measured", counts)
+    baseline_path = baseline / f"{name}.csv"
+    try:
+        if not baseline_path.is_file():
+            return SourceReport(name, "No baseline", counts)
+        comparison = compare_results(veristat, baseline_path, csv_path)
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        csv.Error,
+        AssertionError,
+        subprocess.CalledProcessError,
+    ) as error:
+        return source_error(name, csv_path, error, counts)
+    return SourceReport(name, "Compared", counts, comparison)
+
+
+def changed_rows(reports):
+    changes = []
+    for report in reports:
+        if report.comparison is not None:
+            changes.extend([report.name] + row for row in report.comparison.table)
+
+    changes.sort(
+        key=lambda row: (
+            NEW_FAILURE_SUFFIX not in row[3],
+            -abs(float(row[4].removesuffix(" %"))),
+            row[:3],
+        )
+    )
+    return changes
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--results", type=Path, required=True)
+    parser.add_argument("--veristat", type=Path, required=True)
+    parser.add_argument("--baseline", type=Path)
     args = parser.parse_args()
     summary_filename = os.getenv("GITHUB_STEP_SUMMARY")
     if not summary_filename:
         logging.error("GITHUB_STEP_SUMMARY environment variable is not set")
-        sys.exit(1)
-    sys.exit(main(args.filename, summary_filename))
+        return 1
+
+    status_file = args.results / "status.json"
+    statuses = json.loads(status_file.read_text()) if status_file.exists() else {}
+    reports = [
+        summarize_source(
+            selection["name"],
+            statuses.get(selection["name"], {}),
+            args.results,
+            args.baseline,
+            args.veristat,
+        )
+        for selection in json.loads(args.config.read_text())
+    ]
+    overview = [
+        [report.name, *(report.counts or ["-", "-", "-"]), report.outcome]
+        for report in reports
+    ]
+    changes = changed_rows(reports)
+    compared = sum(report.comparison is not None for report in reports)
+    sys.stdout.write(render_report(overview, changes, compared))
+    with open(summary_filename, "a", encoding="utf-8") as file:
+        file.write("\n\n" + render_report(overview, changes, compared, markup=True))
+    if output_filename := os.getenv("GITHUB_OUTPUT"):
+        measured = sorted(
+            report.name for report in reports if report.counts is not None
+        )
+        with open(output_filename, "a", encoding="utf-8") as file:
+            file.write(f"measured={' '.join(measured)}\n")
+    return int(
+        any(
+            report.error or (report.comparison and report.comparison.new_failures)
+            for report in reports
+        )
+    )
+
+
+if __name__ == "__main__":
+    sys.exit(main())

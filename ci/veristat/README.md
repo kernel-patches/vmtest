@@ -115,10 +115,20 @@ python3 ci/veristat/create_manifest.py --config ci/veristat/oss.json \
     --output manifest.json
 ```
 
-`compare-veristat-results.sh` compares a corpus CSV with its cached baseline
-through `veristat --compare` and `veristat_compare.py`. It fails only when a
-program that passed in the baseline now fails. Without a baseline, it prints
-the results and passes.
+`veristat_compare.py` reports all configured sources in one overview and pools
+changed programs into one table with source labels. Failed/interrupted sources
+and missing baselines remain visible. It uses `veristat --compare` per source;
+verification regressions fail, and performance changes remain informational.
+Without a baseline, a measured source is reported as such and passes.
+
+```sh
+GITHUB_STEP_SUMMARY=summary.md python3 ci/veristat/veristat_compare.py \
+    --config ci/veristat/oss.json --results veristat-results \
+    --veristat selftests/bpf/veristat --baseline veristat-baseline
+```
+
+Omit `--baseline` for a measurement-only report. In GitHub Actions the report
+outputs the measured sources through `GITHUB_OUTPUT`, for baseline staging.
 
 Each caller controls publication: OSS can share its debug bundle; Meta objects
 and raw logs must remain private. The OSS workflow uploads the whole results
