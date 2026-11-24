@@ -38,6 +38,11 @@ jobs:
           sudo apt-get update
           sudo -E apt-get install --no-install-recommends -y \
               libelf-dev libcap-dev binutils-dev zlib1g-dev libreadline-dev llvm
+      - name: Check bpftool code, docs and bash completion are in sync
+        shell: bash
+        run: |
+          cd "${REPO_ROOT}"
+          python3 ./tools/testing/selftests/bpf/test_bpftool_synctypes.py
       - name: Test
         shell: bash
         run: |
